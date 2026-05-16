@@ -1,0 +1,116 @@
+:root {
+  --bubble-bg: rgba(246, 244, 238, 0.94);
+  --bubble-border: rgba(36, 33, 28, 0.12);
+  --text-strong: #1f2933;
+  --text-soft: #52606d;
+  --accent: #2a9d8f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 208px;
+  min-width: 208px;
+  height: 248px;
+  min-height: 248px;
+  margin: 0;
+  background: transparent;
+  font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif;
+}
+
+body {
+  overflow: hidden;
+}
+
+.pet-shell {
+  width: 208px;
+  height: 248px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 8px 7px 10px;
+  gap: 2px;
+}
+
+.bubble {
+  width: 194px;
+  min-width: 194px;
+  max-width: 194px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: var(--bubble-bg);
+  border: 1px solid var(--bubble-border);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 16px 40px rgba(19, 26, 35, 0.14);
+  -webkit-app-region: drag;
+  overflow: hidden;
+}
+
+.bubble-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.bubble-message {
+  margin-top: 4px;
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--text-soft);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.pet-stage {
+  width: 150px;
+  height: 152px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin-bottom: 0;
+  cursor: grab;
+  display: grid;
+  place-items: end center;
+  touch-action: none;
+  position: relative;
+}
+
+.pet-stage:active {
+  cursor: grabbing;
+}
+
+.pet-sprite {
+  image-rendering: pixelated;
+  transform: translateY(-6px);
+  filter: drop-shadow(0 10px 18px rgba(22, 32, 43, 0.24));
+}
+
+.pet-resize-handle {
+  position: absolute;
+  right: 7px;
+  bottom: 5px;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.pet-resize-handle::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid rgba(42, 157, 143, 0.65);
+  border-bottom: 2px solid rgba(42, 157, 143, 0.65);
+}
+
+.mini-hint {
+  display: none;
+}

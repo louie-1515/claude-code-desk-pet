@@ -1,0 +1,84 @@
+{
+  "statusLine": {
+    "type": "command",
+    "command": "node \"__PROJECT_ROOT__/bridge/claude-hook.js\"",
+    "padding": 1,
+    "refreshInterval": 1
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"__PROJECT_ROOT__/bridge/claude-hook.js\""
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"__PROJECT_ROOT__/bridge/claude-hook.js\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"__PROJECT_ROOT__/bridge/claude-hook.js\""
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"__PROJECT_ROOT__/bridge/claude-hook.js\""
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"__PROJECT_ROOT__/bridge/claude-hook.js\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"__PROJECT_ROOT__/bridge/claude-hook.js\""
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"__PROJECT_ROOT__/bridge/claude-hook.js\""
+          }
+        ]
+      }
+    ]
+  }
+}

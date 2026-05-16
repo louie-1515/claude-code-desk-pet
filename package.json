@@ -1,0 +1,18 @@
+{
+  "name": "claude-code-desk-pet",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A local desk pet for Claude Code CLI powered by official hooks and statusLine integration.",
+  "main": "pet-app/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test",
+    "setup": "node scripts/setup-desktop.js",
+    "bridge:sample": "node bridge/inspect-state.js",
+    "bridge:hook": "node bridge/claude-hook.js"
+  },
+  "devDependencies": {
+    "electron": "^42.1.0"
+  }
+}
