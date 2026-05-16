@@ -6,7 +6,7 @@
 
 对话框底部会显示状态栏：`月白档案员 · Opus 4.7 · my-project · 45%`
 
-桌宠窗口会根据 Claude 的状态切换动画：待机、思考、跑工具、等你输入、等你审批、完成、出错。拖拽桌宠会切换跑步动画，右下角拖拽可缩放人物。
+桌宠窗口会根据 Claude 的状态切换动画：待机、思考、跑工具、等你输入、等你审批、完成、出错。鼠标悬停待机状态会跳跃互动，拖拽桌宠切换跑步动画，右下角拖拽可缩放人物，拖出屏幕自动弹回边缘。任务完成后一直挥手，点击桌宠退出并唤出终端。双击打开当前工作目录。
 
 ---
 
@@ -80,7 +80,7 @@ npm start
 | 1 | `running-right` | 8 | 向右拖拽桌宠 | 角色侧身向右跑 |
 | 2 | `running-left` | 8 | 向左拖拽桌宠 | 角色侧身向左跑 |
 | 3 | `waving` | 4 | 任务完成（Stop/SessionEnd） | 角色挥手或欢呼 |
-| 4 | `jumping` | 5 | 保留（当前未使用） | 角色原地跳跃 |
+| 4 | `jumping` | 5 | 鼠标悬停 idle 角色 | 角色原地跳跃 |
 | 5 | `failed` | 8 | PostToolUseFailure / 出错 | 角色困惑或抱歉 |
 | 6 | `waiting` | 6 | Notification（非审批类） | 角色期待，等待输入 |
 | 7 | `running` | 6 | PreToolUse（工具运行中） | 角色跑动或忙碌 |
@@ -128,7 +128,7 @@ Claude Code 通过以下 hook 事件驱动桌宠状态。模板位于 `hooks/set
 | `Stop` | 本轮结束 | `done`（完成） |
 | `SubagentStop` | 子 agent 结束 | `done`（完成） |
 
-**心跳保护：** `Status` 事件不会覆盖瞬时状态（`thinking`、`tool_running`、`needs_approval`、`error`）。
+**心跳保护：** `Status` 事件不会覆盖瞬时状态（`thinking`、`tool_running`、`needs_approval`、`error`、`done`）。思考中断超过 30 秒自动恢复 idle。
 
 **状态栏输出：** `{displayName} · {modelName} · {dirname} · {contextPercent}%`
 
@@ -167,6 +167,7 @@ Claude Code 通过以下 hook 事件驱动桌宠状态。模板位于 `hooks/set
 │   └── state/          ← 运行时状态文件（自动创建，已 gitignore）
 ├── hooks/              ← Claude Code settings 模板
 ├── launcher/           ← Windows 启动脚本 + 桌面图标
+├── scripts/            ← setup 脚本（自动创建快捷方式）
 ├── pet-app/            ← Electron 桌宠应用
 ├── source/             ← 原始素材（月白档案员示例）
 ├── tests/              ← 测试套件（31 个）
@@ -224,11 +225,12 @@ Claude Code 通过以下 hook 事件驱动桌宠状态。模板位于 `hooks/set
 快捷方式指向 `launcher/启动桌宠.bat`（而非直接嵌 PowerShell 参数，会触发杀软）。图标指向 `launcher/Claude 桌宠.ico`。
 
 
-### 9. 测试
+### 9. 创建桌面快捷方式并测试
 
 ```bash
-npm test     # 验证 31 个测试全部通过
-npm start    # 启动桌宠，确认动画正常
+npm run setup   # 自动生成图标和桌面快捷方式
+npm test        # 验证 31 个测试全部通过
+npm start       # 启动桌宠，确认动画正常
 ```
 
 ---
