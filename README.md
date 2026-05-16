@@ -6,7 +6,15 @@
 
 对话框底部会显示状态栏：`月白档案员 · Opus 4.7 · my-project · 45%`
 
-桌宠窗口会根据 Claude 的状态切换动画：待机、思考、跑工具、等你输入、等你审批、完成、出错。鼠标悬停待机状态会跳跃互动，拖拽桌宠切换跑步动画，右下角拖拽可缩放人物，拖出屏幕自动弹回边缘。任务完成后一直挥手，点击桌宠退出并唤出终端。双击打开当前工作目录。
+桌宠窗口会根据 Claude 的状态切换动画：待机、思考、跑工具、等你输入、等你审批、完成、出错。
+
+**交互方式：**
+- **悬停** — 待机状态下跳跃互动
+- **单击** — 唤出/打开 Claude Code 终端；任务完成后点击退出挥手状态
+- **双击** — 打开当前工作项目目录
+- **拖拽** — 移动桌宠，切换跑步动画；拖出屏幕自动弹回边缘
+- **右下角拖拽** — 缩放人物大小（气泡不变）
+- **多次启动** — PID 锁文件 + WMI 双重防重复，不会打开多个实例
 
 ---
 
@@ -150,12 +158,15 @@ Claude Code 通过以下 hook 事件驱动桌宠状态。模板位于 `hooks/set
 
 编辑 `pet-app/view-model.js` 中的 `phaseMap`，修改动画映射或气泡文案。
 
-### launch-claude-pet.ps1（Windows 启动器）
+### 启动器脚本（Windows）
 
-`launcher/launch-claude-pet.ps1` 会同时启动 Electron 桌宠和 Claude Code CLI。前提：
+| 脚本 | 用途 |
+|------|------|
+| `launcher/launch-claude-pet.ps1` | 同时启动 Electron 桌宠和 Claude Code CLI，自动检测已有实例避免重复 |
+| `launcher/focus-or-launch-claude.ps1` | 单击桌宠时调用：终端在运行就还原并置顶（含最小化），没运行就打开 Claude Code CLI |
+| `launcher/启动桌宠.bat` | 桌面快捷方式入口，用 `%~dp0` 自定位 |
 
-- 项目已执行 `npm install`
-- Claude Code 已通过 npm 全局安装（`npm install -g @anthropic-ai/claude-code`）
+前提：项目已 `npm install`，Claude Code 已全局安装。
 
 ---
 

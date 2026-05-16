@@ -3,3 +3,4 @@ bridge/state/
 *.tmp
 *.log
 drag*.log
+launcher/.pet-lock

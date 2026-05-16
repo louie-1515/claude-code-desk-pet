@@ -66,8 +66,13 @@ function endDrag() {
   if (!dragState) {
     return;
   }
-  window.petApi.endWindowDrag(dragState.lastScreenX, dragState.lastScreenY);
+  if (!dragState.didMove) {
+    window.petApi.focusTerminal();
+  } else {
+    window.petApi.endWindowDrag(dragState.lastScreenX, dragState.lastScreenY);
+  }
   dragState = null;
+  isHovering = false;
   renderView();
 }
 
@@ -130,11 +135,7 @@ stage.addEventListener("pointerdown", event => {
   if (event.button !== 0) {
     return;
   }
-  // Click while done: focus Claude Code terminal instead of dragging
-  if (latestState?.phase === "done") {
-    window.petApi.focusTerminal();
-    return;
-  }
+  isHovering = false;
   dragState = {
     startScreenX: event.screenX,
     startScreenY: event.screenY,

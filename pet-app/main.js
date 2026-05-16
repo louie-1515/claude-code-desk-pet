@@ -1,7 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { exec } from "node:child_process";
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { app, BrowserWindow, Menu, Tray, nativeImage, shell, ipcMain, screen } from "electron";
 
 import {
@@ -308,7 +308,8 @@ function registerDragHandlers() {
         }
       } catch {}
     }
-    exec(`powershell.exe -NoProfile -Command "(New-Object -ComObject WScript.Shell).AppActivate((Get-Process -Name powershell,windowsterminal,cmd -ErrorAction SilentlyContinue | Where-Object {$_.MainWindowTitle}).Id)"`, () => {});
+    const ps1 = path.join(projectRoot, "launcher", "focus-or-launch-claude.ps1");
+    exec(`powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${ps1}"`, () => {});
   });
 }
 
@@ -326,6 +327,7 @@ app.whenReady().then(() => {
 
 app.on("before-quit", () => {
   isQuitting = true;
+  try { unlinkSync(path.join(projectRoot, "launcher", ".pet-lock")); } catch {}
 });
 
 app.on("window-all-closed", event => {
