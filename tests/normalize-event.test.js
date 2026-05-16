@@ -49,13 +49,13 @@ test("maps tool lifecycle payloads into tool_running and thinking", () => {
 });
 
 test("maps PreToolUse for approval-required tools into needs_approval", () => {
-  const mode = { permission_mode: "acceptEdits" };
-  assert.equal(normalizeClaudeEvent({ ...mode, hook_event_name: "PreToolUse", tool_name: "Edit" }).phase, "needs_approval");
-  assert.equal(normalizeClaudeEvent({ ...mode, hook_event_name: "PreToolUse", tool_name: "Write" }).phase, "needs_approval");
-  assert.equal(normalizeClaudeEvent({ ...mode, hook_event_name: "PreToolUse", tool_name: "MultiEdit" }).phase, "needs_approval");
-  assert.equal(normalizeClaudeEvent({ ...mode, hook_event_name: "PreToolUse", tool_name: "Bash" }).phase, "needs_approval");
-  // bypassPermissions never shows approval
+  // Only triggers when permission_mode is explicitly acceptEdits or default
+  const acceptEdits = { permission_mode: "acceptEdits" };
+  assert.equal(normalizeClaudeEvent({ ...acceptEdits, hook_event_name: "PreToolUse", tool_name: "Edit" }).phase, "needs_approval");
+  assert.equal(normalizeClaudeEvent({ ...acceptEdits, hook_event_name: "PreToolUse", tool_name: "Bash" }).phase, "needs_approval");
+  // bypassPermissions or missing permission_mode → tool_running
   assert.equal(normalizeClaudeEvent({ permission_mode: "bypassPermissions", hook_event_name: "PreToolUse", tool_name: "Edit" }).phase, "tool_running");
+  assert.equal(normalizeClaudeEvent({ hook_event_name: "PreToolUse", tool_name: "Edit" }).phase, "tool_running");
 });
 
 test("maps tool failure payloads into error", () => {

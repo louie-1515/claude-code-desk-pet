@@ -75,8 +75,9 @@ export function normalizeClaudeEvent(payload = {}) {
     case "UserPromptSubmit":
       return { ...base, phase: "thinking" };
     case "PreToolUse":
-      // Tools that require user approval in acceptEdits/default mode
-      if (["Edit", "Write", "MultiEdit", "Bash"].includes(payload.tool_name) && payload.permission_mode !== "bypassPermissions") {
+      // Only acceptEdits and default prompt the user for approval
+      if (["Edit", "Write", "MultiEdit", "Bash"].includes(payload.tool_name) &&
+          (payload.permission_mode === "acceptEdits" || payload.permission_mode === "default")) {
         return { ...base, phase: "needs_approval" };
       }
       return { ...base, phase: "tool_running" };
