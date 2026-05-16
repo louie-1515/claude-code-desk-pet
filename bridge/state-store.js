@@ -2,7 +2,8 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 
-const TRANSIENT_PHASES = new Set(["thinking", "tool_running", "needs_approval", "error"]);
+const TRANSIENT_PHASES = new Set(["thinking", "tool_running", "needs_approval", "error", "done"]);
+const STUCK_THRESHOLD_MS = 30_000;
 
 export async function loadState(filePath) {
   try {
@@ -21,6 +22,13 @@ function mergeState(existing, incoming) {
   }
 
   if (incoming.isHeartbeat && TRANSIENT_PHASES.has(existing.phase)) {
+    // Allow heartbeat to overwrite "thinking" if stuck > 30s (e.g. user interrupted)
+    if (existing.phase === "thinking" && existing.updatedAt) {
+      const age = Date.now() - new Date(existing.updatedAt).getTime();
+      if (age > STUCK_THRESHOLD_MS) {
+        return { ...existing, ...incoming, isHeartbeat: true };
+      }
+    }
     return {
       ...existing,
       ...incoming,

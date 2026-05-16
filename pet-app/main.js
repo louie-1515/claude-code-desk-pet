@@ -1,5 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { exec } from "node:child_process";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { app, BrowserWindow, Menu, Tray, nativeImage, shell, ipcMain, screen } from "electron";
 
@@ -295,6 +296,19 @@ function registerDragHandlers() {
     const next = currentWindowStateFor(win);
     writeWindowState(next);
     return next;
+  });
+
+  ipcMain.on("pet-focus-terminal", () => {
+    if (existsSync(stateFile)) {
+      try {
+        const s = JSON.parse(readFileSync(stateFile, "utf8"));
+        if (s.phase === "done") {
+          const next = JSON.stringify({ ...s, phase: "idle", isHeartbeat: false, updatedAt: new Date().toISOString() }, null, 2) + "\n";
+          writeFileSync(stateFile, next, "utf8");
+        }
+      } catch {}
+    }
+    exec(`powershell.exe -NoProfile -Command "(New-Object -ComObject WScript.Shell).AppActivate((Get-Process -Name powershell,windowsterminal,cmd -ErrorAction SilentlyContinue | Where-Object {$_.MainWindowTitle}).Id)"`, () => {});
   });
 }
 

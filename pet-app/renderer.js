@@ -20,6 +20,7 @@ let dragState = null;
 let displayCell = null;
 let petScale = 1;
 let resizeState = null;
+let isHovering = false;
 
 function setSpriteFrame(animationName, frameIndex) {
   const animation = petConfig.animations[animationName];
@@ -48,7 +49,12 @@ function renderView() {
   const ui = resolveDisplayState({ phase, dragDirection: dragState?.direction ?? null });
   phaseLabel.textContent = ui.label;
   phaseMessage.textContent = dragState?.direction ? ui.message : latestState?.message || ui.message;
-  startAnimation(ui.animation);
+  if (isHovering && phase !== "idle") {
+    isHovering = false;
+  }
+  if (!isHovering) {
+    startAnimation(ui.animation);
+  }
 }
 
 function renderState(state) {
@@ -124,6 +130,11 @@ stage.addEventListener("pointerdown", event => {
   if (event.button !== 0) {
     return;
   }
+  // Click while done: focus Claude Code terminal instead of dragging
+  if (latestState?.phase === "done") {
+    window.petApi.focusTerminal();
+    return;
+  }
   dragState = {
     startScreenX: event.screenX,
     startScreenY: event.screenY,
@@ -183,5 +194,16 @@ async function endResize(event) {
 
 resizeHandle.addEventListener("pointerup", endResize);
 resizeHandle.addEventListener("pointercancel", endResize);
+
+stage.addEventListener("pointerenter", () => {
+  if (dragState || !petConfig || latestState?.phase !== "idle") return;
+  isHovering = true;
+  startAnimation("jumping");
+});
+
+stage.addEventListener("pointerleave", () => {
+  isHovering = false;
+  if (!dragState) renderView();
+});
 
 boot();

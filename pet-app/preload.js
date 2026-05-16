@@ -70,5 +70,8 @@ contextBridge.exposeInMainWorld("petApi", {
   },
   endPetResize() {
     return ipcRenderer.invoke("pet-window-resize-end");
+  },
+  focusTerminal() {
+    ipcRenderer.send("pet-focus-terminal");
   }
 });
