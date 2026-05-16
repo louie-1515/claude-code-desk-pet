@@ -90,7 +90,7 @@ npm start
 | 3 | `waving` | 4 | 任务完成（Stop/SessionEnd） | 角色挥手或欢呼 |
 | 4 | `jumping` | 5 | 鼠标悬停 idle 角色 | 角色原地跳跃 |
 | 5 | `failed` | 8 | PostToolUseFailure / 出错 | 角色困惑或抱歉 |
-| 6 | `waiting` | 6 | Notification（非审批类） | 角色期待，等待输入 |
+| 6 | `waiting` | 6 | 等待审批 / 等待输入 | 角色期待，等待你的操作 |
 | 7 | `running` | 6 | PreToolUse（工具运行中） | 角色跑动或忙碌 |
 | 8 | `review` | 6 | UserPromptSubmit / PostToolUse（思考中） | 角色阅读或思考 |
 
