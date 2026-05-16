@@ -2,7 +2,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 
-const TRANSIENT_PHASES = new Set(["thinking", "tool_running", "needs_approval", "error", "done"]);
+const TRANSIENT_PHASES = new Set(["thinking", "tool_running", "needs_approval", "error", "done", "waiting_input"]);
 const STUCK_THRESHOLD_MS = 30_000;
 
 export async function loadState(filePath) {

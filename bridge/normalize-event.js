@@ -40,7 +40,7 @@ function inferNotificationPhase(message) {
   if (!message) {
     return "waiting_input";
   }
-  if (/permission|approval|approve/i.test(message)) {
+  if (/permission|approval|approve|edit|change/i.test(message)) {
     return "needs_approval";
   }
   if (/error|failed|denied/i.test(message)) {
@@ -75,6 +75,10 @@ export function normalizeClaudeEvent(payload = {}) {
     case "UserPromptSubmit":
       return { ...base, phase: "thinking" };
     case "PreToolUse":
+      // Tools that require user approval in acceptEdits/default mode
+      if (["Edit", "Write", "MultiEdit", "Bash"].includes(payload.tool_name) && payload.permission_mode !== "bypassPermissions") {
+        return { ...base, phase: "needs_approval" };
+      }
       return { ...base, phase: "tool_running" };
     case "PostToolUse":
       return { ...base, phase: "thinking" };

@@ -129,14 +129,16 @@ Claude Code 通过以下 hook 事件驱动桌宠状态。模板位于 `hooks/set
 |------|----------|----------|
 | `Status` (statusLine) | 每秒心跳 | `idle`（不覆盖瞬时状态） |
 | `UserPromptSubmit` | 用户发送消息 | `thinking`（思考中） |
-| `PreToolUse` | 工具开始执行 | `tool_running`（忙碌中） |
+| `PreToolUse` | 工具开始执行 | `tool_running`（忙碌中）或 `needs_approval`（需审批的工具） |
 | `PostToolUse` | 工具执行完成 | `thinking`（继续思考） |
 | `PostToolUseFailure` | 工具执行失败 | `error`（出错） |
-| `Notification` | 系统通知 | `needs_approval`（审批类）或 `waiting_input` |
+| `Notification` | 系统通知 | `needs_approval`（审批类通知）或 `waiting_input` |
 | `Stop` | 本轮结束 | `done`（完成） |
 | `SubagentStop` | 子 agent 结束 | `done`（完成） |
 
-**心跳保护：** `Status` 事件不会覆盖瞬时状态（`thinking`、`tool_running`、`needs_approval`、`error`、`done`）。思考中断超过 30 秒自动恢复 idle。
+**心跳保护：** `Status` 事件不会覆盖瞬时状态（`thinking`、`tool_running`、`needs_approval`、`error`、`done`、`waiting_input`）。思考中断超过 30 秒自动恢复 idle。`needs_approval` 和 `done` 单击桌宠退出并聚焦终端。
+
+**权限感知：** `PreToolUse` 在 `acceptEdits`/`default` 模式下，`Edit`、`Write`、`MultiEdit`、`Bash` 四类工具自动显示"等你确认"而非"忙碌中"。
 
 **状态栏输出：** `{displayName} · {modelName} · {dirname} · {contextPercent}%`
 

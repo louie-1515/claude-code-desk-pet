@@ -302,7 +302,7 @@ function registerDragHandlers() {
     if (existsSync(stateFile)) {
       try {
         const s = JSON.parse(readFileSync(stateFile, "utf8"));
-        if (s.phase === "done") {
+        if (s.phase === "done" || s.phase === "needs_approval") {
           const next = JSON.stringify({ ...s, phase: "idle", isHeartbeat: false, updatedAt: new Date().toISOString() }, null, 2) + "\n";
           writeFileSync(stateFile, next, "utf8");
         }
