@@ -17,6 +17,7 @@ import { getPetWindowSize, normalizePetScale } from "./display-metrics.js";
 import { defaultWindowState, normalizeWindowStateForStorage } from "./window-state.js";
 import { buildDeskPetMenuTemplate } from "./menu-template.js";
 import { getPetDescriptorById, listBuiltInPets } from "./pet-registry.js";
+import { resolveActiveProjectPath } from "./project-paths.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
@@ -54,6 +55,25 @@ function readWindowState() {
   } catch {
     return null;
   }
+}
+
+function readClaudeState() {
+  if (!existsSync(stateFile)) {
+    return null;
+  }
+  try {
+    return JSON.parse(readFileSync(stateFile, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function openActiveProjectPath() {
+  return shell.openPath(resolveActiveProjectPath(readClaudeState(), projectRoot));
+}
+
+function openCurrentPetDirectory() {
+  return shell.openPath(path.dirname(getCurrentPetResources().petConfigFile));
 }
 
 function writeWindowState(position) {
@@ -205,7 +225,8 @@ function buildAppMenu() {
     { label: "显示/隐藏桌宠", click: toggleWindow },
     { label: "重载桌宠", click: reloadWindow },
     { label: "恢复默认位置", click: resetWindowPosition },
-    { label: "打开项目目录", click: () => shell.openPath(projectRoot) },
+    { label: "打开当前工作目录", click: () => openActiveProjectPath() },
+    { label: "打开当前形象目录", click: () => openCurrentPetDirectory() },
     { label: "打开状态文件", click: () => shell.openPath(windowStateFile) },
     { type: "separator" },
     ...sharedItems,

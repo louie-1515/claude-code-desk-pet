@@ -1,4 +1,4 @@
-import { resolveDisplayState, resolveDragDirection } from "./view-model.js";
+import { resolveDisplayState, resolveDragDirection, shouldKeepHovering } from "./view-model.js";
 import { getDisplayCellSize, getPetWindowSize } from "./display-metrics.js";
 
 const sprite = document.getElementById("pet-sprite");
@@ -24,6 +24,7 @@ let resizeState = null;
 let isHovering = false;
 let lastDragDirection = "right";
 let hideBubbleOnIdle = false;
+let hasWindowFocus = true;
 
 export function shouldShowBubble({ phase, isDragging, hideBubbleOnIdle }) {
   if (isDragging) return true;
@@ -125,9 +126,12 @@ function renderView() {
   const ui = resolveDisplayState({ phase, dragDirection: dragState?.direction ?? null });
   phaseLabel.textContent = ui.label;
   phaseMessage.textContent = dragState?.direction ? ui.message : latestState?.message || ui.message;
-  if (isHovering && phase !== "idle") {
-    isHovering = false;
-  }
+  isHovering = shouldKeepHovering({
+    isHovering,
+    phase,
+    isDragging: Boolean(dragState),
+    hasWindowFocus
+  });
   if (!isHovering) {
     startAnimation(ui.animation);
   }
@@ -242,6 +246,9 @@ stage.addEventListener("dblclick", () => {
 stage.addEventListener("contextmenu", event => {
   event.preventDefault();
   event.stopPropagation();
+  isHovering = false;
+  hasWindowFocus = false;
+  renderView();
   window.petApi.showContextMenu(event.screenX, event.screenY);
 });
 
@@ -294,6 +301,17 @@ stage.addEventListener("pointerenter", () => {
 stage.addEventListener("pointerleave", () => {
   isHovering = false;
   if (!dragState) renderView();
+});
+
+window.addEventListener("blur", () => {
+  hasWindowFocus = false;
+  isHovering = false;
+  renderView();
+});
+
+window.addEventListener("focus", () => {
+  hasWindowFocus = true;
+  renderView();
 });
 
 boot();

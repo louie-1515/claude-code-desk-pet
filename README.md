@@ -1,103 +1,74 @@
 # Claude Code Desk Pet
 
-一个给 Claude Code CLI 用的自定义桌面宠物。通过官方 `statusLine` 和 `hooks` 接口感知 Claude 的状态，用 Electron 渲染一个浮动的像素风角色。
+一个给 Claude Code CLI 用的自定义桌面宠物。项目通过官方 `statusLine` 和 `hooks` 感知 Claude 的状态，用 Electron 渲染一个浮动像素角色，并支持多形象切换。
 
-## 效果
+## 这项目现在能做什么
 
-对话框底部会显示状态栏：`月白档案员 · Opus 4.7 · my-project · 45%`
+- 根据 Claude 状态切换动画：待机、思考、忙碌、等待、完成、出错
+- 左键拖动桌宠，显示左右奔跑动画
+- 悬停待机角色时播放跳跃互动
+- 右键桌宠或右键托盘图标，打开同一套功能菜单
+- 菜单里切换“待机时隐藏气泡”
+- 菜单里切换内置角色
+- Windows 桌面快捷方式启动桌宠 + Claude Code CLI
 
-桌宠窗口会根据 Claude 的状态切换动画：待机、思考、跑工具、等你输入、等你审批、完成、出错。
+当前内置角色：
 
-**交互方式：**
-- **悬停** — 待机状态下跳跃互动
-- **单击** — 唤出/打开 Claude Code 终端；任务完成后点击退出挥手状态
-- **双击** — 打开当前工作项目目录
-- **拖拽** — 移动桌宠，切换跑步动画；拖出屏幕自动弹回边缘
-- **右击** — 打开和托盘右键一致的功能菜单
-- **右下角拖拽** — 缩放人物大小（气泡固定不变）
-- **待机隐藏气泡** — 可在菜单里开关，默认关闭
-- **切换形象** — 可在菜单里的“切换形象”子菜单中切换内置角色
-- **多次启动** — PID 锁文件 + WMI 双重防重复，不会打开多个实例
+- `月白档案员`
+- `晨光信使`
 
 ---
 
-## 快速开始（已生成好精灵图的用户）
+## 快速开始
 
 ```bash
 npm install
-npm run setup   # 创建桌面快捷方式（Windows）
+npm run setup
 npm start
 ```
 
-把 `hooks/settings.template.json` 合并到 `~/.claude/settings.json`（将 `__PROJECT_ROOT__` 替换为本项目路径）。
+然后把 `hooks/settings.template.json` 合并到 `~/.claude/settings.json`，并把其中的 `__PROJECT_ROOT__` 替换为**桌宠项目本身**的绝对路径，也就是这个仓库根目录。这个占位符的作用是让 Claude 能找到桌宠自己的 `bridge/claude-hook.js`。
 
 ---
 
-## 创建你自己的桌宠
+## 交互说明
 
-整个流程由 Claude Code 辅助完成。你需要做的是告诉 Claude 你想要的角色，然后去生图大模型跑一次提示词。
+- **悬停**：待机时跳跃
+- **单击**：唤出或聚焦 Claude Code 终端；完成态/审批态会顺手退出该瞬时状态
+- **双击**：打开 Claude 当前正在操作的工作目录；如果当前拿不到工作目录，再回退到桌宠项目目录
+- **拖拽**：移动桌宠，拖动中显示左右奔跑动画
+- **右击**：打开和托盘一致的菜单；其中“打开当前工作目录”与双击遵循同一条规则，“打开当前形象目录”会直接跳到当前选中角色的 `assets/pets/<pet-id>/`
+- **右下角拖拽**：缩放人物，气泡大小不跟着变
 
-### 步骤 1：告诉 Claude 你的角色
+---
 
-在 Claude Code 对话中输入：
+## 角色系统
 
-> 帮我创建一个 Claude Code 桌宠。角色叫 {名字}，形象是 {外观描述}。
+### 目录结构
 
-Claude 会根据你的描述生成提示词，参考 `PROMPT_TEMPLATE.md`。
+每个角色都建议放在：
 
-### 步骤 2：去生图大模型生成精灵图
-
-复制 Claude 给出的提示词，到任意生图模型（Midjourney、DALL·E、ComfyUI 等）生成一张精灵图。要求：
-
-- **9 行 × 8 列** 网格布局
-- 每格 **384 × 416 像素**，整图 **3072 × 3744 像素**
-- 纯色背景（绿幕或白色），方便自动抠图
-- 每行动画说明见下方「精灵图规范」
-
-### 步骤 3：把图片发回给 Claude
-
-将生成的精灵图直接拖入 Claude Code 对话。Claude 会：
-
-1. 读取目标角色目录下的 `pet.json` 结构，理解动画行映射
-2. 从精灵图中按行提取每一帧
-3. 自动抠图、裁剪、缩放、组装到对应角色目录下的 `spritesheet.png`
-4. 更新对应角色目录下的 `pet.json` 中的角色名字和动画配置
-5. 生成 `launcher/` 下的桌面图标（`.ico`）
-6. 更新桌面快捷方式图标
-
-### 步骤 4：安装运行
-
-```bash
-npm install
-npm run setup   # 自动生成图标和桌面快捷方式
-npm start
+```text
+assets/pets/<pet-id>/
 ```
 
-### 步骤 5：接入 Claude Code
+目录里至少包含：
 
-将 `hooks/settings.template.json` 合并到 `~/.claude/settings.json`，把 `__PROJECT_ROOT__` 替换为本项目的绝对路径（用正斜杠）。
+```text
+assets/pets/<pet-id>/pet.json
+assets/pets/<pet-id>/spritesheet.png
+```
 
-状态栏的名字会自动读取当前激活角色目录下 `pet.json` 的 `displayName`。
+例如：
 
----
+```text
+assets/pets/yuebai-archivist/pet.json
+assets/pets/yuebai-archivist/spritesheet.png
+assets/pets/xiaokou/pet.json
+assets/pets/xiaokou/spritesheet.png
+```
 
-## 精灵图规范
-
-精灵图为 **8 列 × 9 行**网格，每格 384 × 416 像素。每行是一个动画序列，帧从左到右排列。多余的列留空。
-
-| 行号 | 动画 ID | 帧数 | 触发器 | 动作描述 |
-|------|---------|------|--------|----------|
-| 0 | `idle` | 6 | 默认/待机 | 角色站立，轻微呼吸浮动 |
-| 1 | `running-right` | 8 | 向右拖拽桌宠 | 角色侧身向右跑 |
-| 2 | `running-left` | 8 | 向左拖拽桌宠 | 角色侧身向左跑 |
-| 3 | `waving` | 4 | 任务完成（Stop/SessionEnd） | 角色挥手或欢呼 |
-| 4 | `jumping` | 5 | 鼠标悬停 idle 角色 | 角色原地跳跃 |
-| 5 | `failed` | 8 | PostToolUseFailure / 出错 | 角色困惑或抱歉 |
-| 6 | `waiting` | 6 | 等待审批 / 等待输入 | 角色期待，等待你的操作 |
-| 7 | `running` | 6 | PreToolUse（工具运行中） | 角色跑动或忙碌 |
-| 8 | `review` | 6 | UserPromptSubmit / PostToolUse（思考中） | 角色阅读或思考 |
-
-**角色目录下 `pet.json` 结构：**
+### `pet.json` 最小结构
 
 ```json
 {
@@ -120,104 +91,104 @@ npm start
 }
 ```
 
-如果你手动调整了动画帧数，记得更新 `frames` 字段。
+### 固定的 9 行状态映射
+
+这套 sprite sheet 不是随便排的，行序是固定的：
+
+| 行号 | 动画 ID | 运行时用途 |
+|------|---------|------------|
+| 0 | `idle` | 默认待机 |
+| 1 | `running-right` | 向右拖动桌宠 |
+| 2 | `running-left` | 向左拖动桌宠 |
+| 3 | `waving` | 完成态 |
+| 4 | `jumping` | 悬停 idle 角色 |
+| 5 | `failed` | 出错 |
+| 6 | `waiting` | 等待输入 / 等待确认 |
+| 7 | `running` | 工具运行中 |
+| 8 | `review` | 思考 / 阅读 |
+
+不要改动这 9 行顺序。提示词模板已经按这套结构写好了，见 [PROMPT_TEMPLATE.md](./PROMPT_TEMPLATE.md)。
 
 ---
 
-## Hook 事件参考
+## 图标规则
 
-Claude Code 通过以下 hook 事件驱动桌宠状态。模板位于 `hooks/settings.template.json`。
+这个项目里有两类你最常看到的图标：
 
-| Hook | 触发时机 | 桌宠状态 |
-|------|----------|----------|
-| `Status` (statusLine) | 每秒心跳 | `idle`（不覆盖瞬时状态） |
-| `UserPromptSubmit` | 用户发送消息 | `thinking`（思考中） |
-| `PreToolUse` | 工具开始执行 | `tool_running`（忙碌中）或 `needs_approval`（需审批的工具） |
-| `PostToolUse` | 工具执行完成 | `thinking`（继续思考） |
-| `PostToolUseFailure` | 工具执行失败 | `error`（出错） |
-| `Notification` | 系统通知 | `needs_approval`（审批类通知）或 `waiting_input` |
-| `Stop` | 本轮结束 | `done`（完成） |
-| `SubagentStop` | 子 agent 结束 | `done`（完成） |
+1. **桌面快捷方式图标**
+2. **托盘隐藏区图标**
 
-**心跳保护：** `Status` 事件不会覆盖瞬时状态（`thinking`、`tool_running`、`needs_approval`、`error`、`done`、`waiting_input`）。思考中断超过 30 秒自动恢复 idle。`needs_approval` 和 `done` 单击桌宠退出并聚焦终端。
+默认建议让它们保持同一个视觉来源。
 
-**权限感知：** `PreToolUse` 在 `acceptEdits`/`default` 模式下，`Edit`、`Write`、`MultiEdit`、`Bash` 四类工具自动显示"等你确认"而非"忙碌中"。
+### 当前共享图标文件
 
-**状态栏输出：** `{displayName} · {modelName} · {dirname} · {contextPercent}%`
+项目默认使用：
 
-`displayName` 来自当前激活角色目录下的 `pet.json`，自动适配你的角色名字。
+```text
+launcher/Claude 桌宠.ico
+```
+
+- `npm run setup` 创建桌面快捷方式时，会把这个 `.ico` 写进 `.lnk`
+- 托盘图标默认也会优先使用这个 `.ico`
+
+### 如果你想自定义图标
+
+最稳的做法是：
+
+1. 替换 `launcher/Claude 桌宠.ico`
+2. 如果某个角色要显示不同托盘图标，再去 [pet-registry.js](./pet-app/pet-registry.js) 里给该角色改 `trayIconFile`
+3. 重新运行：
+
+```bash
+npm run setup
+```
+
+这样桌面快捷方式图标和托盘图标就更容易保持一致。
+
+### 重要说明
+
+当前项目的“切换角色”会切换运行时角色资源，但**不会自动为每个角色生成独立桌面快捷方式**。  
+桌面快捷方式依然是项目级入口，默认只认 `launcher/Claude 桌宠.ico`。
 
 ---
 
-## 配置说明
+## 新增一个可切换角色
 
-### 更换角色
+如果你要往项目里加一只新角色，而不是替换现有角色，步骤分成两部分：
 
-建议将每个角色都放在 `assets/pets/<pet-id>/` 目录下，包含：
+### A. 先把资源做出来
 
-- `pet.json`
-- `spritesheet.png`
+推荐的交互方式不是让用户自己改模板，而是：
 
-当前内置角色也是按这个结构组织的。
+1. 用户先对 Codex 或 Claude 描述角色
+2. Codex 或 Claude 根据 [PROMPT_TEMPLATE.md](./PROMPT_TEMPLATE.md) 自动整理成最终生图提示词
+3. 用户去生图；如果当前就是 Codex，也可以直接生图
+4. Codex 或 Claude 继续引导用户把生成结果整理成角色资源
 
-### 新增一个可切换的新角色
+建议让用户这样描述：
 
-如果你想让一个新角色出现在“切换形象”菜单里，除了放资源文件，还需要把它注册到角色列表。
+> 帮我给 Claude Code 桌宠新增一个可切换角色。角色叫 {名字}，形象是 {外观描述}，风格偏 {风格偏好}。
 
-#### 1. 创建角色目录
+Codex / Claude 应继续引导：
 
-在 `assets/pets/` 下新建一个目录：
+1. 帮用户补全角色设定
+2. 用模板生成最终提示词
+3. 提醒用户必须保持 8 列 × 9 行和固定状态映射
+4. 引导用户把生成图发回当前项目进行整理
+
+拿到生图结果后，再做下面这些事：
+
+1. 确认行序符合固定状态映射
+2. 准备好 `pet.json`
+3. 放入：
 
 ```text
 assets/pets/<pet-id>/
 ```
 
-例如：
+### B. 再把资源接入项目
 
-```text
-assets/pets/morning-messenger/
-```
-
-#### 2. 放入最少必需文件
-
-这个目录里至少要有：
-
-- `pet.json`
-- `spritesheet.png`
-
-例如：
-
-```text
-assets/pets/morning-messenger/pet.json
-assets/pets/morning-messenger/spritesheet.png
-```
-
-#### 3. `pet.json` 至少包含这些内容
-
-```json
-{
-  "id": "morning-messenger",
-  "displayName": "晨光信使",
-  "description": "一个新的 Claude Code 桌宠形象。",
-  "cell": { "width": 384, "height": 416 },
-  "atlas": { "columns": 8, "rows": 9 },
-  "animations": {
-    "idle":          { "row": 0, "frames": 6, "frameDurationMs": 180 },
-    "running-right": { "row": 1, "frames": 8, "frameDurationMs": 120 },
-    "running-left":  { "row": 2, "frames": 8, "frameDurationMs": 120 },
-    "waving":        { "row": 3, "frames": 4, "frameDurationMs": 150 },
-    "jumping":       { "row": 4, "frames": 5, "frameDurationMs": 150 },
-    "failed":        { "row": 5, "frames": 8, "frameDurationMs": 160 },
-    "waiting":       { "row": 6, "frames": 6, "frameDurationMs": 170 },
-    "running":       { "row": 7, "frames": 6, "frameDurationMs": 130 },
-    "review":        { "row": 8, "frames": 6, "frameDurationMs": 150 }
-  }
-}
-```
-
-#### 4. 把新角色注册到菜单
-
-编辑 [pet-registry.js](</E:/codex/ClaudeCode桌宠/pet-app/pet-registry.js>)，在 `builtInPets` 里新增一项：
+编辑 [pet-registry.js](./pet-app/pet-registry.js)，在 `builtInPets` 里新增一项：
 
 ```js
 {
@@ -229,118 +200,120 @@ assets/pets/morning-messenger/spritesheet.png
 }
 ```
 
-只有注册到这里，它才会出现在右键菜单的“切换形象”子菜单里。
+只有注册到这里，它才会出现在“切换形象”菜单里。
 
-#### 5. 重启桌宠
+接好后重启桌宠即可。
 
-重启后，新角色就可以在菜单里切换了。
+---
 
-### 内置形象切换
+## 从零创建一只新桌宠
 
-右键桌宠或右键托盘图标，打开“切换形象”子菜单，即可在当前内置角色之间切换。当前版本内置：
+如果你现在还没有资源，完整流程是：
 
-- `月白档案员`
-- `晨光信使`
+1. 用户先对 Codex 或 Claude 描述想要的角色
+2. Codex 或 Claude 根据 [PROMPT_TEMPLATE.md](./PROMPT_TEMPLATE.md) 生成最终提示词
+3. 用户去生图；如果当前就是 Codex，可以直接生图
+4. 用户把 sprite sheet 发回当前会话
+5. Codex 或 Claude 继续引导并整理出：
+   - `pet.json`
+   - `spritesheet.png`
+6. 放进 `assets/pets/<pet-id>/`
+7. 在 [pet-registry.js](./pet-app/pet-registry.js) 注册
+8. 如有需要，更新 `launcher/Claude 桌宠.ico`
+9. 运行：
 
-切换结果会自动保存，下次启动保持上次选择。
+```bash
+npm run setup
+npm test
+npm start
+```
 
-### 自定义状态栏格式
+### “创建桌宠”和“新增角色”的区别
 
-编辑 `bridge/claude-hook.js` 中 `main()` 函数的 `process.stdout.write` 行。
+- **创建桌宠**：重点是把一套新资源做出来
+- **新增角色**：重点是把现成资源接入当前项目，并让它出现在切换菜单里
 
-### 自定义动画相位
+这两个流程会复用同一套资源结构，但不是一回事。
 
-编辑 `pet-app/view-model.js` 中的 `phaseMap`，修改动画映射或气泡文案。
+---
 
-### 启动器脚本（Windows）
+## Claude 状态如何映射到动作
 
-| 脚本 | 用途 |
+项目通过 `hooks/settings.template.json` 把 Claude 的 hook 事件写到桥接层，再由桌宠读取状态文件切换动作。
+
+主要映射：
+
+- `Status`：`idle`
+- `UserPromptSubmit`：`thinking`
+- `PreToolUse`：`tool_running` 或 `needs_approval`
+- `PostToolUse`：`thinking`
+- `PostToolUseFailure`：`error`
+- `Notification`：`needs_approval` 或 `waiting_input`
+- `Stop` / `SubagentStop`：`done`
+
+运行时动画映射在 [view-model.js](./pet-app/view-model.js) 里。
+
+---
+
+## 启动器与快捷方式
+
+Windows 相关入口：
+
+| 文件 | 用途 |
 |------|------|
-| `launcher/launch-claude-pet.ps1` | 同时启动 Electron 桌宠和 Claude Code CLI，自动检测已有实例避免重复 |
-| `launcher/focus-or-launch-claude.ps1` | 单击桌宠时调用：终端在运行就还原并置顶（含最小化），没运行就打开 Claude Code CLI |
-| `launcher/启动桌宠.bat` | 桌面快捷方式入口，用 `%~dp0` 自定位 |
-
-前提：项目已 `npm install`，Claude Code 已全局安装。
+| [launch-claude-pet.ps1](./launcher/launch-claude-pet.ps1) | 同时启动桌宠和 Claude Code CLI，带去重 |
+| [focus-or-launch-claude.ps1](./launcher/focus-or-launch-claude.ps1) | 单击桌宠时聚焦或启动 Claude |
+| [启动桌宠.bat](./launcher/启动桌宠.bat) | 桌面快捷方式入口 |
+| [setup-desktop.js](./scripts/setup-desktop.js) | 创建桌面快捷方式 |
 
 ---
 
 ## 项目结构
 
+```text
+assets/
+  pets/                 角色资源目录
+bridge/
+  state/                运行时状态文件
+hooks/                  Claude Code settings 模板
+launcher/               Windows 启动脚本和共享图标
+pet-app/                Electron 桌宠应用
+scripts/                setup 脚本
+source/                 原始素材
+tests/                  测试
+tools/                  构建脚本
+PROMPT_TEMPLATE.md      生图提示词模板
 ```
-├── assets/
-│   └── pets/           ← 每个内置/自定义角色各自的 pet.json + spritesheet.png
-├── bridge/             ← hooks 桥接：事件归一化 + 状态持久化
-│   └── state/          ← 运行时状态文件（自动创建，已 gitignore）
-├── hooks/              ← Claude Code settings 模板
-├── launcher/           ← Windows 启动脚本 + 桌面图标
-├── scripts/            ← setup 脚本（自动创建快捷方式）
-├── pet-app/            ← Electron 桌宠应用
-├── source/             ← 原始素材（月白档案员示例）
-├── tests/              ← 测试套件
-├── tools/              ← 精灵图构建脚本
-└── PROMPT_TEMPLATE.md  ← AI 生图提示词模板
-```
-
-**三层架构：**
-- **Runtime：** `assets/`、`bridge/`、`pet-app/`、`launcher/`
-- **Build & Edit：** `source/`、`tools/`
-- **Support：** `tests/`、`hooks/`
 
 ---
 
-## 给 Claude（AI 处理指南）
-
-当用户把精灵图拖入对话，要求你处理成桌宠时，按以下流程操作：
-
-### 1. 读懂现有结构
-
-```
-先读目标角色目录下的 pet.json，理解 animation 行映射和帧数配置。
-```
-
-### 2. 切分精灵图
-
-用 Python Pillow 将用户的大图按 `cell.width × cell.height` 切成 8×9 网格，保存每帧到临时目录。
-
-### 3. 自动抠图
-
-对每帧执行绿幕/白底抠图。参考 `tools/build_yuebai_pet.py` 中的 `alpha_from_background()` 和 `keep_main_sprite()` 逻辑。
-
-### 4. 组装 spritesheet
-
-将每行动画的 N 帧从左到右拼入目标精灵图。第 1 列从 `(0, row × cellH)` 开始，每帧 `cellW` 宽度偏移。
-
-### 5. 更新配置
-
-更新目标角色目录下的 `pet.json`：
-- `id`：英文短 ID
-- `displayName`：用户说的角色名字（也是状态栏显示的名字）
-- `description`：简短描述
-- 各动画的 `frames`：实际有效帧数
-
-### 6. 输出到 assets/
-
-将新精灵图保存到目标角色目录下的 `spritesheet.png`，确保尺寸正确。同步更新同目录下的 `pet.json`。
-
-### 7. 生成图标
-
-从 `idle` 动画第一帧提取，缩放到 48×48，保存为 `launcher/Claude 桌宠.ico`。
-
-### 8. 创建桌面快捷方式（Windows）
-
-快捷方式指向 `launcher/启动桌宠.bat`（而非直接嵌 PowerShell 参数，会触发杀软）。图标指向 `launcher/Claude 桌宠.ico`。
-
-
-### 9. 创建桌面快捷方式并测试
+## 测试
 
 ```bash
-npm run setup   # 自动生成图标和桌面快捷方式
-npm test        # 验证测试全部通过
-npm start       # 启动桌宠，确认动画正常
+npm test
 ```
+
+当前测试覆盖：
+
+- 状态桥接
+- 窗口行为
+- 资源配置
+- 右键菜单模板
+- 角色注册表
+- 待机隐藏气泡逻辑
 
 ---
 
-## 技术栈
+## 给接手这个项目的人
 
-Node.js · Electron 42 · ESM · node:test · vanilla HTML/CSS/JS · Pillow (Python)
+如果你是新来的用户、Claude、Codex，先记住这几条：
+
+1. **角色资源统一放 `assets/pets/<pet-id>/`**
+2. **固定 9 行动作映射不能改顺序**
+3. **新角色要进菜单，必须改 `pet-registry.js`**
+4. **桌面快捷方式和托盘图标默认共用 `launcher/Claude 桌宠.ico`**
+5. **提示词模板是运行时友好的，不是普通插画提示词**
+6. **用户应该描述角色，由 Codex / Claude 负责生成提示词并一路引导，不要把模板直接丢给用户改占位符**
+7. **如果你想把这套流程装成可复用 skill，仓库里已经附带模板：`skill/desk-pet-role-workflow/SKILL.md`；安装到本地 skills 目录后即可使用**
+
+做到这七条，基本就不会把这个项目接歪。

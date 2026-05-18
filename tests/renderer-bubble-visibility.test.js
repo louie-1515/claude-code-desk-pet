@@ -52,6 +52,7 @@ async function importRendererWithStubs() {
   };
 
   globalThis.window = {
+    addEventListener() {},
     petApi: {
       async getBootPayload() {
         return {

@@ -31,6 +31,27 @@ export function resolveDragDirection({
   return currentDirection ?? fallbackDirection;
 }
 
+export function shouldKeepHovering({
+  isHovering,
+  phase,
+  isDragging,
+  hasWindowFocus = true
+}) {
+  if (!isHovering) {
+    return false;
+  }
+  if (!hasWindowFocus) {
+    return false;
+  }
+  if (isDragging) {
+    return false;
+  }
+  if (phase !== "idle") {
+    return false;
+  }
+  return true;
+}
+
 export function resolveDisplayState({ phase, dragDirection }) {
   if (dragDirection === "right") {
     return { animation: "running-right", label: "拖动中", message: "向右拖动桌宠。" };

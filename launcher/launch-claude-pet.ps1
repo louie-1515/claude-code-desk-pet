@@ -3,8 +3,9 @@ $ErrorActionPreference = "Stop"
 $launcherRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectRoot = Split-Path -Parent $launcherRoot
 $electronCli = Join-Path $projectRoot "node_modules\electron\cli.js"
-$claudeScript = Join-Path $env:APPDATA "npm\claude.ps1"
 $lockFile = Join-Path $projectRoot "launcher\.pet-lock"
+. (Join-Path $launcherRoot "resolve-claude-launch-command.ps1")
+$claudeLaunch = Get-ClaudeLaunchCommand
 
 # --- Deduplicate pet process ---
 $petAlreadyRunning = $false
@@ -42,9 +43,9 @@ $existingClaude = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | 
 }
 
 if (-not $existingClaude) {
-    if (Test-Path $claudeScript) {
+    if ($claudeLaunch.found -and $claudeLaunch.command) {
         Start-Process -FilePath "powershell.exe" `
-            -ArgumentList "-NoExit", "-Command", "Set-Location `$HOME; & '$claudeScript'"
+            -ArgumentList "-NoExit", "-Command", "Set-Location `$HOME; & '$($claudeLaunch.command)'"
     } else {
         Start-Process -FilePath "powershell.exe" `
             -ArgumentList "-NoExit", "-Command", "Set-Location `$HOME"

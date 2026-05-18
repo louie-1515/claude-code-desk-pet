@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer, shell } from "electron";
 import { readFile, watchFile, unwatchFile } from "node:fs";
 import path from "node:path";
+import { resolveActiveProjectPath } from "./project-paths.js";
 
 function readArg(name) {
   const prefix = `--${name}=`;
@@ -62,8 +63,7 @@ contextBridge.exposeInMainWorld("petApi", {
   },
   async openProjectRoot() {
     const state = await readJson(stateFile);
-    const cwd = state?.cwd ?? state?.projectDir ?? projectRoot;
-    return shell.openPath(cwd);
+    return shell.openPath(resolveActiveProjectPath(state, projectRoot));
   },
   showContextMenu(screenX, screenY) {
     ipcRenderer.send("pet-context-menu", { screenX, screenY });

@@ -53,6 +53,7 @@ test("renderer does not crash when pet.json is missing an animation key (degrade
 
   let watched = false;
   globalThis.window = {
+    addEventListener() {},
     petApi: {
       async getBootPayload() {
         return {

@@ -1,7 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { dragDirectionFromDelta, resolveDisplayState, resolveDragDirection } from "../pet-app/view-model.js";
+import {
+  dragDirectionFromDelta,
+  resolveDisplayState,
+  resolveDragDirection,
+  shouldKeepHovering
+} from "../pet-app/view-model.js";
 
 test("dragDirectionFromDelta ignores tiny movement and detects left/right", () => {
   assert.equal(dragDirectionFromDelta(4), null);
@@ -25,4 +30,23 @@ test("resolveDragDirection keeps the previous direction through tiny pauses and 
   assert.equal(resolveDragDirection({ deltaX: -1, currentDirection: "left", threshold: 4 }), "left");
   assert.equal(resolveDragDirection({ deltaX: -8, currentDirection: "right", threshold: 4 }), "left");
   assert.equal(resolveDragDirection({ deltaX: 0, currentDirection: null, threshold: 4, fallbackDirection: "left" }), "left");
+});
+
+test("shouldKeepHovering clears hover when focus leaves or dragging starts", () => {
+  assert.equal(
+    shouldKeepHovering({ isHovering: true, phase: "idle", isDragging: false, hasWindowFocus: true }),
+    true
+  );
+  assert.equal(
+    shouldKeepHovering({ isHovering: true, phase: "idle", isDragging: false, hasWindowFocus: false }),
+    false
+  );
+  assert.equal(
+    shouldKeepHovering({ isHovering: true, phase: "idle", isDragging: true, hasWindowFocus: true }),
+    false
+  );
+  assert.equal(
+    shouldKeepHovering({ isHovering: true, phase: "done", isDragging: false, hasWindowFocus: true }),
+    false
+  );
 });
