@@ -96,11 +96,11 @@ test("shouldShowBubble: idle + hideBubbleOnIdle=true hides bubble", async () => 
   );
 });
 
-test("shouldShowBubble: dragging shows bubble even when idle + hideBubbleOnIdle=true", async () => {
+test("shouldShowBubble: dragging keeps bubble hidden when idle + hideBubbleOnIdle=true", async () => {
   const { shouldShowBubble } = await importRendererWithStubs();
   assert.equal(
     shouldShowBubble({ phase: "idle", isDragging: true, hideBubbleOnIdle: true }),
-    true
+    false
   );
 });
 

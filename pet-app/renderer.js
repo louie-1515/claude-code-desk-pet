@@ -27,9 +27,9 @@ let hideBubbleOnIdle = false;
 let hasWindowFocus = true;
 
 export function shouldShowBubble({ phase, isDragging, hideBubbleOnIdle }) {
+  if (hideBubbleOnIdle && phase === "idle") return false;
   if (isDragging) return true;
   if (phase !== "idle") return true;
-  if (hideBubbleOnIdle) return false;
   return true;
 }
 
