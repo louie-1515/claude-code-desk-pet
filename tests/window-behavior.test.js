@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   clampPositionToWorkArea,
+  clampResizedWindowPosition,
   defaultWindowPosition,
   settleDraggedWindowPosition,
   snapWindowPosition,
@@ -66,4 +67,14 @@ test("windowCenterPoint uses the actual window center for display selection", ()
     }),
     { x: 616, y: 412 }
   );
+});
+
+test("clampResizedWindowPosition keeps an enlarged pet visible near the bottom-right edge", () => {
+  const position = clampResizedWindowPosition({
+    point: { x: 1220, y: 620 },
+    workArea: { x: 0, y: 0, width: 1440, height: 900 },
+    windowSize: { width: 260, height: 320 }
+  });
+
+  assert.deepEqual(position, { x: 1180, y: 580 });
 });

@@ -18,6 +18,19 @@ export function dragDirectionFromDelta(deltaX, threshold = 10) {
   return null;
 }
 
+export function resolveDragDirection({
+  deltaX,
+  currentDirection = null,
+  threshold = 10,
+  fallbackDirection = "right"
+}) {
+  const nextDirection = dragDirectionFromDelta(deltaX, threshold);
+  if (nextDirection) {
+    return nextDirection;
+  }
+  return currentDirection ?? fallbackDirection;
+}
+
 export function resolveDisplayState({ phase, dragDirection }) {
   if (dragDirection === "right") {
     return { animation: "running-right", label: "拖动中", message: "向右拖动桌宠。" };

@@ -1,11 +1,12 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { exec } from "node:child_process";
-import { appendFileSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { app, BrowserWindow, Menu, Tray, nativeImage, shell, ipcMain, screen } from "electron";
 
 import {
   clampPositionToWorkArea,
+  clampResizedWindowPosition,
   defaultWindowPosition,
   snapWindowPosition,
   windowCenterPoint
@@ -14,18 +15,35 @@ import { createPetWindowOptions, defaultWindowSize } from "./window-options.js";
 import { getPointerPoint } from "./drag-coordinates.js";
 import { getPetWindowSize, normalizePetScale } from "./display-metrics.js";
 import { defaultWindowState, normalizeWindowStateForStorage } from "./window-state.js";
+import { buildDeskPetMenuTemplate } from "./menu-template.js";
+import { getPetDescriptorById, listBuiltInPets } from "./pet-registry.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
 const stateFile = path.join(projectRoot, "bridge", "state", "claude-state.json");
 const windowStateFile = path.join(projectRoot, "bridge", "state", "window-state.json");
-const petConfigFile = path.join(projectRoot, "assets", "pet.json");
-const spriteFile = path.join(projectRoot, "assets", "spritesheet.png");
 const iconFile = path.join(projectRoot, "launcher", "Claude 桌宠.ico");
 let mainWindow = null;
 let tray = null;
 let isQuitting = false;
 let dragSession = null;
+
+function getCurrentWindowState() {
+  return { ...defaultWindowState(), ...(readWindowState() ?? {}) };
+}
+
+function getCurrentPetDescriptor() {
+  return getPetDescriptorById(getCurrentWindowState().selectedPetId);
+}
+
+function getCurrentPetResources() {
+  const descriptor = getCurrentPetDescriptor();
+  return {
+    descriptor,
+    petConfigFile: descriptor.petConfigFile,
+    spriteFile: descriptor.spriteFile
+  };
+}
 
 function readWindowState() {
   if (!existsSync(windowStateFile)) {
@@ -39,7 +57,7 @@ function readWindowState() {
 }
 
 function writeWindowState(position) {
-  const existing = readWindowState();
+  const existing = getCurrentWindowState();
   const merged = { ...existing, ...position };
   const next = normalizeWindowStateForStorage(merged);
   if (!next) {
@@ -59,11 +77,11 @@ function getWindowSize(win = null) {
 }
 
 function readPetConfig() {
-  return JSON.parse(readFileSync(petConfigFile, "utf8"));
+  return JSON.parse(readFileSync(getCurrentPetResources().petConfigFile, "utf8"));
 }
 
 function getCurrentPetScale() {
-  return readWindowState()?.petScale ?? 1;
+  return getCurrentWindowState().petScale ?? 1;
 }
 
 function getWindowSizeForScale(scale = getCurrentPetScale()) {
@@ -79,7 +97,7 @@ function getDisplayWorkAreaForWindowPosition(point, windowSize) {
 }
 
 function computeInitialWindowPosition() {
-  const saved = readWindowState();
+  const saved = getCurrentWindowState();
   const windowSize = getWindowSize();
   if (saved) {
     const workArea = getDisplayWorkAreaForWindowPosition(saved, windowSize);
@@ -121,16 +139,92 @@ function reloadWindow() {
   mainWindow.webContents.reloadIgnoringCache();
 }
 
+function recreateWindow() {
+  const wasVisible = Boolean(mainWindow?.isVisible());
+  const wasFocused = Boolean(mainWindow?.isFocused());
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    const [x, y] = mainWindow.getPosition();
+    writeWindowState({ x, y });
+    mainWindow.destroy();
+  }
+  createWindow();
+  if (mainWindow && wasVisible) {
+    mainWindow.show();
+    if (wasFocused) {
+      mainWindow.focus();
+    }
+  }
+}
+
+function updateRendererSettings(win = mainWindow) {
+  if (!win || win.isDestroyed()) {
+    return;
+  }
+  win.webContents.send("pet-settings-updated", getCurrentWindowState());
+}
+
+function syncTrayForPet(descriptor = getCurrentPetDescriptor()) {
+  if (!tray) {
+    return;
+  }
+  const iconPath = existsSync(descriptor.trayIconFile ?? "") ? descriptor.trayIconFile : iconFile;
+  tray.setImage(nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 }));
+  tray.setToolTip(descriptor.name ?? "Claude Code 桌宠");
+}
+
+function refreshMenus() {
+  if (!tray) {
+    return;
+  }
+  tray.setContextMenu(buildAppMenu());
+}
+
+function buildAppMenu() {
+  const settings = getCurrentWindowState();
+  const sharedItems = buildDeskPetMenuTemplate({
+    selectedPetId: settings.selectedPetId,
+    hideBubbleOnIdle: settings.hideBubbleOnIdle,
+    pets: listBuiltInPets().map(pet => ({
+      id: pet.id,
+      displayName: pet.name
+    })),
+    onToggleHideBubbleOnIdle(nextValue) {
+      writeWindowState({ hideBubbleOnIdle: nextValue });
+      updateRendererSettings();
+      refreshMenus();
+    },
+    onSelectPet(petId) {
+      writeWindowState({ selectedPetId: petId });
+      syncTrayForPet();
+      refreshMenus();
+      recreateWindow();
+    }
+  });
+
+  return Menu.buildFromTemplate([
+    { label: "显示/隐藏桌宠", click: toggleWindow },
+    { label: "重载桌宠", click: reloadWindow },
+    { label: "恢复默认位置", click: resetWindowPosition },
+    { label: "打开项目目录", click: () => shell.openPath(projectRoot) },
+    { label: "打开状态文件", click: () => shell.openPath(windowStateFile) },
+    { type: "separator" },
+    ...sharedItems,
+    { type: "separator" },
+    { label: "退出", click: () => app.quit() }
+  ]);
+}
+
 function createWindow() {
-  const saved = readWindowState();
+  const saved = getCurrentWindowState();
   const petScale = saved?.petScale ?? 1;
   const windowSize = getWindowSizeForScale(petScale);
+  const resources = getCurrentPetResources();
   mainWindow = new BrowserWindow(
     createPetWindowOptions({
       preload: path.join(__dirname, "preload.js"),
       stateFile,
-      petConfigFile,
-      spriteFile,
+      petConfigFile: resources.petConfigFile,
+      spriteFile: resources.spriteFile,
       projectRoot,
       windowSize
     })
@@ -159,37 +253,26 @@ function toggleWindow() {
 }
 
 function createTray() {
-  const image = existsSync(iconFile)
-    ? nativeImage.createFromPath(iconFile)
-    : nativeImage.createFromPath(spriteFile);
+  const descriptor = getCurrentPetDescriptor();
+  const fallbackSprite = getCurrentPetResources().spriteFile;
+  const image = existsSync(descriptor.trayIconFile ?? iconFile)
+    ? nativeImage.createFromPath(descriptor.trayIconFile ?? iconFile)
+    : nativeImage.createFromPath(fallbackSprite);
   tray = new Tray(image.resize({ width: 16, height: 16 }));
-  try {
-    const pet = JSON.parse(readFileSync(petConfigFile, "utf8"));
-    tray.setToolTip(pet.displayName ?? "Claude Code 桌宠");
-  } catch {
-    tray.setToolTip("Claude Code 桌宠");
-  }
+  syncTrayForPet(descriptor);
   tray.on("click", toggleWindow);
-  tray.setContextMenu(
-    Menu.buildFromTemplate([
-      { label: "显示/隐藏桌宠", click: toggleWindow },
-      { label: "重载桌宠", click: reloadWindow },
-      { label: "恢复默认位置", click: resetWindowPosition },
-      { label: "打开项目目录", click: () => shell.openPath(projectRoot) },
-      { label: "打开状态文件", click: () => shell.openPath(windowStateFile) },
-      { type: "separator" },
-      { label: "退出", click: () => app.quit() }
-    ])
-  );
+  refreshMenus();
 }
 
 function currentWindowStateFor(win) {
   const [x, y] = win.getPosition();
-  const saved = readWindowState();
+  const saved = getCurrentWindowState();
   return {
     x,
     y,
-    petScale: saved?.petScale ?? 1
+    petScale: saved?.petScale ?? 1,
+    selectedPetId: saved?.selectedPetId,
+    hideBubbleOnIdle: saved?.hideBubbleOnIdle
   };
 }
 
@@ -268,7 +351,8 @@ function registerDragHandlers() {
     dragSession = null;
   });
 
-  ipcMain.handle("pet-window-state-read", () => readWindowState() ?? defaultWindowState());
+  ipcMain.handle("pet-window-state-read", () => getCurrentWindowState());
+  ipcMain.handle("pet-resources-read", () => getCurrentPetResources());
 
   ipcMain.handle("pet-window-resize-pet", (event, payload) => {
     const win = BrowserWindow.fromWebContents(event.sender);
@@ -279,9 +363,20 @@ function registerDragHandlers() {
     const nextScale = normalizePetScale(saved.petScale + (payload?.deltaX ?? 0) / 240);
     const windowSize = getWindowSizeForScale(nextScale);
     win.setSize(windowSize.width, windowSize.height);
+    const [resizedX, resizedY] = win.getPosition();
+    const nextPoint = { x: resizedX, y: resizedY };
+    const workArea = getDisplayWorkAreaForWindowPosition(nextPoint, windowSize);
+    const clampedPoint = clampResizedWindowPosition({
+      point: nextPoint,
+      workArea,
+      windowSize
+    });
+    if (clampedPoint.x !== resizedX || clampedPoint.y !== resizedY) {
+      win.setPosition(clampedPoint.x, clampedPoint.y);
+    }
     const next = {
-      x: saved.x,
-      y: saved.y,
+      x: clampedPoint.x,
+      y: clampedPoint.y,
       petScale: nextScale
     };
     writeWindowState(next);
@@ -298,6 +393,21 @@ function registerDragHandlers() {
     return next;
   });
 
+  ipcMain.on("pet-context-menu", (event, payload) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win) {
+      return;
+    }
+    const [winX, winY] = win.getPosition();
+    const x = typeof payload?.screenX === "number" ? Math.round(payload.screenX - winX) : undefined;
+    const y = typeof payload?.screenY === "number" ? Math.round(payload.screenY - winY) : undefined;
+    buildAppMenu().popup({
+      window: win,
+      x,
+      y
+    });
+  });
+
   ipcMain.on("pet-focus-terminal", () => {
     if (existsSync(stateFile)) {
       try {
@@ -310,6 +420,11 @@ function registerDragHandlers() {
     }
     const ps1 = path.join(projectRoot, "launcher", "focus-or-launch-claude.ps1");
     exec(`powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${ps1}"`, () => {});
+  });
+
+  ipcMain.on("pet-settings-subscribe", event => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    updateRendererSettings(win);
   });
 }
 

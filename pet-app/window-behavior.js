@@ -23,6 +23,10 @@ export function settleDraggedWindowPosition({ point, workArea, windowSize }) {
   return clampPositionToWorkArea({ point, workArea, windowSize });
 }
 
+export function clampResizedWindowPosition({ point, workArea, windowSize }) {
+  return clampPositionToWorkArea({ point, workArea, windowSize });
+}
+
 export function windowCenterPoint({ point, windowSize }) {
   return {
     x: Math.round(point.x + windowSize.width / 2),

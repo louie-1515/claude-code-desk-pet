@@ -2,77 +2,213 @@
 
 ## 使用说明
 
-1. 先定义你的桌宠：名字、外观、风格
-2. 把下面的提示词里的 `{占位符}` 替换成你的设定
-3. 到生图大模型（Midjourney / DALL·E / 其他）生成**一张大图**
-4. 把生成的图片发给 Claude Code，让它按项目流程处理
+1. 先定义你的桌宠：名字、外观、身份气质、主色
+2. 把下面提示词里的 `{占位符}` 替换成你的设定
+3. 到生图大模型生成 **一张完整 sprite sheet**
+4. 把生成图发回 Claude Code，让它按项目流程切图、抠图、注册到项目里
+
+---
+
+## 这份模板要解决什么问题
+
+这套模板不是只为了“画得好看”，更重要的是让生成结果能**稳定接入桌宠运行时**。
+
+必须同时满足：
+
+1. **固定 9 行状态映射**
+2. **固定角色体型基准**
+3. **固定站位基线**
+4. **左右拖动跑成对匹配**
+5. **多余列留空**
+
+如果行序、体型、站位不稳定，后面即使抠图干净，桌宠运行时也会出现动作映射错位、切换角色忽大忽小、拖动方向观感不对等问题。
 
 ---
 
 ## 精灵图布局要求
 
-生成一张 **水平 8 列 × 垂直 9 行**、共 72 格的精灵图（sprite sheet）。
+生成一张 **8 列 × 9 行** 的 sprite sheet，共 72 格。
 
 - 每格大小：**384 × 416 像素**
 - 整图大小：**3072 × 3744 像素**
-- 背景：**纯色（绿幕或白色）**，便于自动抠图
-- 风格：像素风（pixel art）
-- 角色统一放在每个格子**底部居中**，脚底留少量间距
+- 背景：**纯白或纯绿纯色背景**
+- 风格：**清晰像素风**
+- 角色：**每一格都必须是同一个角色**
+- 站位：**底部居中**
+- 脚底基线：角色最低点应稳定落在距底边 **12 到 18 px**
+- 体型基准：角色整体高度应稳定占每格高度 **78% 到 82%**
+- 宽度基准：左右最宽轮廓应稳定占每格宽度 **60% 到 68%**
+- 同一张表内所有帧的人物体积误差尽量控制在 **3% 以内**
+
+不要让某几帧突然画得特别大、特别小、特别高、特别低。
 
 ---
 
-## 每行动画说明
+## 固定行序与状态语义
 
-| 行 | 动画名 | 帧数 | 用途 | 动作描述 |
-|----|--------|------|------|----------|
-| 0 | idle | 6 | 待机 | 角色自然站立，轻微呼吸浮动 |
-| 1 | running-right | 8 | 向右拖拽 | 角色侧身向右跑动 |
-| 2 | running-left | 8 | 向左拖拽 | 角色侧身向左跑动 |
-| 3 | waving | 4 | 任务完成 | 角色挥手/欢呼 |
-| 4 | jumping | 5 | 跳跃 | 角色原地跳跃 |
-| 5 | failed | 8 | 出错 | 角色表现困惑/抱歉 |
-| 6 | waiting | 6 | 等待输入 | 角色表现期待/等待 |
-| 7 | running | 6 | 忙碌中 | 角色在跑动/忙碌 |
-| 8 | review | 6 | 思考中 | 角色在阅读/思考 |
+**下面这 9 行顺序是固定的，不能改。**
 
-**每行的帧从左到右排列**，第 1 列到第 N 列（N = 该行帧数），多余的列留空。
+| 行 | 动画 ID | 帧数 | 运行时用途 | 必须画成什么 |
+|----|---------|------|------------|--------------|
+| 0 | `idle` | 6 | 默认待机 | 正面站立，轻微呼吸、眨眼 |
+| 1 | `running-right` | 8 | 向右拖动桌宠 | 角色必须朝右跑，侧身，明显向右运动 |
+| 2 | `running-left` | 8 | 向左拖动桌宠 | 角色必须朝左跑，和上一行成对匹配 |
+| 3 | `waving` | 4 | 任务完成 | 小幅挥手、轻庆祝，不要夸张大动作 |
+| 4 | `jumping` | 5 | 鼠标悬停 idle 角色 | 原地小跳，只改变上下运动，不改变角色体型 |
+| 5 | `failed` | 8 | 出错 / 失败 | 困惑、抱歉、失落、恢复 |
+| 6 | `waiting` | 6 | 等待输入 / 等待确认 | 安静期待、轻微前倾、等待回应 |
+| 7 | `running` | 6 | 工具运行中 / 忙碌中 | 忙碌工作态，不是左右拖动跑 |
+| 8 | `review` | 6 | 思考 / 阅读 / 查看资料 | 阅读、查看文档、思考资料 |
+
+**硬约束：**
+
+- 不允许改动行序
+- 不允许把两个状态合并成一行
+- 不允许把某一行换成你觉得“更好看”的别的动作
+- 每行有效帧必须从左到右连续排列
+- 多余的列必须留空，不能塞额外动作、特效或装饰
 
 ---
 
-## 提示词模板
+## 动作一致性要求
 
-将 `{name}` 和 `{appearance}` 替换为你的角色设定后，发给生图模型：
+### 1. 左右拖动跑
 
-```
-A pixel-art sprite sheet for a 2D desktop pet. 
-The sprite sheet is a grid of 9 rows x 8 columns. 
-Each cell is 384x416 pixels. 
+`running-right` 和 `running-left` 必须是完全对应的一对：
+
+- 同一体型
+- 同一镜头距离
+- 同一角色比例
+- 同一站位基线
+- 只改变朝向和跑步节奏
+
+不能把左跑画成更近、更大、更正面，也不能把右跑画成更远、更小。
+
+### 2. 跳跃
+
+`jumping` 只能表现“原地小跳”：
+
+- 角色大小与 `idle` 基本一致
+- 变化主要来自上下位移与轻微肢体变化
+- 不要画成大幅腾空
+- 不要让整个人物比例发生变化
+
+### 3. 忙碌 vs 思考
+
+`running` 和 `review` 不要混淆：
+
+- `running` = 工具运行中，忙碌处理任务
+- `review` = 思考、查看、阅读资料
+
+`running` 不应该只是静止看文档，`review` 也不应该画成左右奔跑。
+
+### 4. 待机 vs 等待
+
+`idle` 和 `waiting` 也不要混淆：
+
+- `idle` = 自然待机
+- `waiting` = 明显在等你、期待输入或确认
+
+---
+
+## 负面约束
+
+下面这些内容尽量明确禁止，能大幅减少后处理麻烦：
+
+- 不要写实风
+- 不要半写实动漫渲染
+- 不要柔光插画感
+- 不要 3D 渲染感
+- 不要水彩、纸纹、草图、厚涂
+- 不要复杂背景
+- 不要地台、场景、家具、地面阴影块
+- 不要发光特效、粒子雨、漂浮背景物
+- 不要大面积速度线、感叹号、星星、泡泡、符号装饰
+- 不要在留空列里补动作
+- 不要角色忽大忽小
+- 不要人物在某些帧里飘到半空或沉到底边
+- 不要更换服装、发型、道具主设定
+
+如果某个状态需要道具，只允许**小型、贴近身体、易抠图的单一道具**，比如一张发光小文档。
+
+---
+
+## 英文提示词模板
+
+将 `{name}` 和 `{appearance}` 替换后直接发给生图模型：
+
+```text
+A clean pixel-art sprite sheet for a 2D desktop pet character.
+
+The sheet must be an exact grid of 8 columns by 9 rows.
+Each cell must be exactly 384x416 pixels.
+The full image must be exactly 3072x3744 pixels.
+
 The character is: {name}, {appearance}.
 
-Row 0 (idle, 6 frames): standing naturally, gentle breathing animation, facing front.
-Row 1 (running-right, 8 frames): running toward the right, side view.
-Row 2 (running-left, 8 frames): running toward the left, side view, mirrored pose.
-Row 3 (waving, 4 frames): waving hand or celebrating, happy expression.
-Row 4 (jumping, 5 frames): jumping up and down, excited motion.
-Row 5 (failed, 8 frames): looking confused or apologetic, head tilted.
-Row 6 (waiting, 6 frames): looking expectant, slightly leaning forward, waiting.
-Row 7 (running, 6 frames): running/busy motion, focused expression.
-Row 8 (review, 6 frames): reading a floating document or thinking, glasses or thoughtful pose.
+This sprite sheet is for a runtime-driven desktop pet system, so the row order is fixed and must not be changed.
+Do not reorder rows.
+Do not merge states.
+Do not replace a row with a different action.
+Frames in each row must run from left to right continuously, and all unused cells must be left empty.
 
-Character is centered at the bottom of each cell, feet near the bottom edge.
-All frames must be the SAME character, consistent size, style and color palette.
-Solid green or white background for easy background removal.
-Pixel art style, clean edges, minimal anti-aliasing.
-16-bit or 32-bit retro game aesthetic.
+The same exact character must appear in every frame, with consistent proportions, outfit, silhouette, palette, and camera distance.
+Character size must remain highly consistent across all frames.
+Character height should stay around 78% to 82% of the cell height.
+Character width should stay around 60% to 68% of the cell width.
+The character must be bottom-centered in every cell.
+The lowest point of the character should stay on a stable baseline about 12 to 18 pixels above the bottom edge.
+Do not make some frames much larger, smaller, higher, or lower than others.
+
+Row 0: idle, 6 frames. Front-facing idle stance, gentle breathing, subtle blink, calm neutral expression.
+Row 1: running-right, 8 frames. Side-view running toward the right, clearly moving right, compact running cycle.
+Row 2: running-left, 8 frames. Side-view running toward the left, matched counterpart of row 1, same scale and same pose logic.
+Row 3: waving, 4 frames. Small friendly wave or light celebration, compact motion, not exaggerated.
+Row 4: jumping, 5 frames. Small in-place hop for hover interaction, same body scale as idle, only vertical motion changes.
+Row 5: failed, 8 frames. Confused, apologetic, disappointed, then slight recovery.
+Row 6: waiting, 6 frames. Expectant waiting pose, slightly attentive, as if waiting for user input or approval.
+Row 7: running, 6 frames. Busy working state, active task-processing motion, not left/right drag running.
+Row 8: review, 6 frames. Reading, checking a small floating document, reviewing information, thoughtful but still compact.
+
+Pixel art only.
+Clean crisp edges.
+Minimal anti-aliasing.
+Retro 16-bit / 32-bit game sprite feel.
+Plain solid white or solid green background only.
+
+Negative constraints:
+no realistic rendering,
+no semi-realistic anime rendering,
+no painterly shading,
+no watercolor,
+no sketch texture,
+no paper texture,
+no 3D render look,
+no background scene,
+no props outside the character silhouette area,
+no extra decorative symbols in empty cells,
+no large VFX,
+no floating particles,
+no oversized speed lines,
+no dramatic lighting,
+no size drift between frames,
+no row reordering,
+no incorrect state-action mapping.
 ```
+
+---
+
+## 中文使用提醒
+
+如果你是让 Claude 或其他 AI 帮你二次整理提示词，最好再附一句中文要求：
+
+> 这不是普通插画，而是要接入固定状态映射的桌宠精灵图。请严格保持 9 行固定顺序、统一体型、统一站位、统一镜头距离，多余列留空。
 
 ---
 
 ## 示例设定
 
-填入上面的模板前，先想清楚：
+- **名字：** 月白档案员
+- **外观：** 身形小巧的人形少女档案员，深蓝夜空斗篷与帽子，月亮和星星装饰，白色短发，浅色眼睛，温柔安静，像素风，整体清冷但可爱
 
-- **名字：** 月白档案员（示例用）
-- **外观：** 穿深蓝色档案员制服，戴圆形眼镜，深棕色短发，16-bit 像素风
-
-替换后发给生图模型，生成整张精灵图，然后把图片发给 Claude Code 处理。
+把示例设定替换进模板后，再发给生图模型生成整张 sprite sheet。

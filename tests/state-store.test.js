@@ -34,3 +34,39 @@ test("loadState returns null for a missing file", async () => {
   const result = await loadState(path.join(dir, "missing.json"));
   assert.equal(result, null);
 });
+
+test("writeState throws when the atomic rename fails so callers do not assume success", async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), "claude-pet-write-fail-"));
+  const file = path.join(dir, "claude-state.json");
+  const calls = [];
+
+  await assert.rejects(
+    () =>
+      writeState(
+        file,
+        {
+          sessionId: "session-11",
+          phase: "idle",
+          updatedAt: "2026-05-17T12:00:00.000Z"
+        },
+        {
+          mkdir: async () => {},
+          writeFile: async tempPath => {
+            calls.push(["writeFile", tempPath]);
+          },
+          rename: async () => {
+            const error = new Error("file is locked");
+            error.code = "EPERM";
+            throw error;
+          },
+          unlink: async tempPath => {
+            calls.push(["unlink", tempPath]);
+          }
+        }
+      ),
+    /Failed to persist Claude pet state/
+  );
+
+  assert.equal(calls[0][0], "writeFile");
+  assert.equal(calls[1][0], "unlink");
+});

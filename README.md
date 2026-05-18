@@ -13,7 +13,10 @@
 - **单击** — 唤出/打开 Claude Code 终端；任务完成后点击退出挥手状态
 - **双击** — 打开当前工作项目目录
 - **拖拽** — 移动桌宠，切换跑步动画；拖出屏幕自动弹回边缘
+- **右击** — 打开和托盘右键一致的功能菜单
 - **右下角拖拽** — 缩放人物大小（气泡固定不变）
+- **待机隐藏气泡** — 可在菜单里开关，默认关闭
+- **切换形象** — 可在菜单里的“切换形象”子菜单中切换内置角色
 - **多次启动** — PID 锁文件 + WMI 双重防重复，不会打开多个实例
 
 ---
@@ -55,10 +58,10 @@ Claude 会根据你的描述生成提示词，参考 `PROMPT_TEMPLATE.md`。
 
 将生成的精灵图直接拖入 Claude Code 对话。Claude 会：
 
-1. 读取 `assets/pet.json` 结构，理解动画行映射
+1. 读取目标角色目录下的 `pet.json` 结构，理解动画行映射
 2. 从精灵图中按行提取每一帧
-3. 自动抠图、裁剪、缩放、组装到 `assets/spritesheet.png`
-4. 更新 `assets/pet.json` 中的角色名字和动画配置
+3. 自动抠图、裁剪、缩放、组装到对应角色目录下的 `spritesheet.png`
+4. 更新对应角色目录下的 `pet.json` 中的角色名字和动画配置
 5. 生成 `launcher/` 下的桌面图标（`.ico`）
 6. 更新桌面快捷方式图标
 
@@ -74,7 +77,7 @@ npm start
 
 将 `hooks/settings.template.json` 合并到 `~/.claude/settings.json`，把 `__PROJECT_ROOT__` 替换为本项目的绝对路径（用正斜杠）。
 
-状态栏的名字会自动读取 `assets/pet.json` 中的 `displayName`。
+状态栏的名字会自动读取当前激活角色目录下 `pet.json` 的 `displayName`。
 
 ---
 
@@ -94,7 +97,7 @@ npm start
 | 7 | `running` | 6 | PreToolUse（工具运行中） | 角色跑动或忙碌 |
 | 8 | `review` | 6 | UserPromptSubmit / PostToolUse（思考中） | 角色阅读或思考 |
 
-**`assets/pet.json` 结构：**
+**角色目录下 `pet.json` 结构：**
 
 ```json
 {
@@ -142,7 +145,7 @@ Claude Code 通过以下 hook 事件驱动桌宠状态。模板位于 `hooks/set
 
 **状态栏输出：** `{displayName} · {modelName} · {dirname} · {contextPercent}%`
 
-`displayName` 来自 `assets/pet.json`，自动适配你的角色名字。
+`displayName` 来自当前激活角色目录下的 `pet.json`，自动适配你的角色名字。
 
 ---
 
@@ -150,7 +153,96 @@ Claude Code 通过以下 hook 事件驱动桌宠状态。模板位于 `hooks/set
 
 ### 更换角色
 
-替换 `assets/spritesheet.png` 和更新 `assets/pet.json` 即可。
+建议将每个角色都放在 `assets/pets/<pet-id>/` 目录下，包含：
+
+- `pet.json`
+- `spritesheet.png`
+
+当前内置角色也是按这个结构组织的。
+
+### 新增一个可切换的新角色
+
+如果你想让一个新角色出现在“切换形象”菜单里，除了放资源文件，还需要把它注册到角色列表。
+
+#### 1. 创建角色目录
+
+在 `assets/pets/` 下新建一个目录：
+
+```text
+assets/pets/<pet-id>/
+```
+
+例如：
+
+```text
+assets/pets/morning-messenger/
+```
+
+#### 2. 放入最少必需文件
+
+这个目录里至少要有：
+
+- `pet.json`
+- `spritesheet.png`
+
+例如：
+
+```text
+assets/pets/morning-messenger/pet.json
+assets/pets/morning-messenger/spritesheet.png
+```
+
+#### 3. `pet.json` 至少包含这些内容
+
+```json
+{
+  "id": "morning-messenger",
+  "displayName": "晨光信使",
+  "description": "一个新的 Claude Code 桌宠形象。",
+  "cell": { "width": 384, "height": 416 },
+  "atlas": { "columns": 8, "rows": 9 },
+  "animations": {
+    "idle":          { "row": 0, "frames": 6, "frameDurationMs": 180 },
+    "running-right": { "row": 1, "frames": 8, "frameDurationMs": 120 },
+    "running-left":  { "row": 2, "frames": 8, "frameDurationMs": 120 },
+    "waving":        { "row": 3, "frames": 4, "frameDurationMs": 150 },
+    "jumping":       { "row": 4, "frames": 5, "frameDurationMs": 150 },
+    "failed":        { "row": 5, "frames": 8, "frameDurationMs": 160 },
+    "waiting":       { "row": 6, "frames": 6, "frameDurationMs": 170 },
+    "running":       { "row": 7, "frames": 6, "frameDurationMs": 130 },
+    "review":        { "row": 8, "frames": 6, "frameDurationMs": 150 }
+  }
+}
+```
+
+#### 4. 把新角色注册到菜单
+
+编辑 [pet-registry.js](</E:/codex/ClaudeCode桌宠/pet-app/pet-registry.js>)，在 `builtInPets` 里新增一项：
+
+```js
+{
+  id: "morning-messenger",
+  name: "晨光信使",
+  petConfigFile: path.join(projectRoot, "assets", "pets", "morning-messenger", "pet.json"),
+  spriteFile: path.join(projectRoot, "assets", "pets", "morning-messenger", "spritesheet.png"),
+  trayIconFile: path.join(projectRoot, "launcher", "Claude 桌宠.ico")
+}
+```
+
+只有注册到这里，它才会出现在右键菜单的“切换形象”子菜单里。
+
+#### 5. 重启桌宠
+
+重启后，新角色就可以在菜单里切换了。
+
+### 内置形象切换
+
+右键桌宠或右键托盘图标，打开“切换形象”子菜单，即可在当前内置角色之间切换。当前版本内置：
+
+- `月白档案员`
+- `晨光信使`
+
+切换结果会自动保存，下次启动保持上次选择。
 
 ### 自定义状态栏格式
 
@@ -175,7 +267,8 @@ Claude Code 通过以下 hook 事件驱动桌宠状态。模板位于 `hooks/set
 ## 项目结构
 
 ```
-├── assets/             ← 运行时精灵图 + pet.json（替换这里即可换角色）
+├── assets/
+│   └── pets/           ← 每个内置/自定义角色各自的 pet.json + spritesheet.png
 ├── bridge/             ← hooks 桥接：事件归一化 + 状态持久化
 │   └── state/          ← 运行时状态文件（自动创建，已 gitignore）
 ├── hooks/              ← Claude Code settings 模板
@@ -183,7 +276,7 @@ Claude Code 通过以下 hook 事件驱动桌宠状态。模板位于 `hooks/set
 ├── scripts/            ← setup 脚本（自动创建快捷方式）
 ├── pet-app/            ← Electron 桌宠应用
 ├── source/             ← 原始素材（月白档案员示例）
-├── tests/              ← 测试套件（31 个）
+├── tests/              ← 测试套件
 ├── tools/              ← 精灵图构建脚本
 └── PROMPT_TEMPLATE.md  ← AI 生图提示词模板
 ```
@@ -202,7 +295,7 @@ Claude Code 通过以下 hook 事件驱动桌宠状态。模板位于 `hooks/set
 ### 1. 读懂现有结构
 
 ```
-先读 assets/pet.json，理解 animation 行映射和帧数配置。
+先读目标角色目录下的 pet.json，理解 animation 行映射和帧数配置。
 ```
 
 ### 2. 切分精灵图
@@ -219,7 +312,7 @@ Claude Code 通过以下 hook 事件驱动桌宠状态。模板位于 `hooks/set
 
 ### 5. 更新配置
 
-更新 `assets/pet.json`：
+更新目标角色目录下的 `pet.json`：
 - `id`：英文短 ID
 - `displayName`：用户说的角色名字（也是状态栏显示的名字）
 - `description`：简短描述
@@ -227,7 +320,7 @@ Claude Code 通过以下 hook 事件驱动桌宠状态。模板位于 `hooks/set
 
 ### 6. 输出到 assets/
 
-将新精灵图保存为 `assets/spritesheet.png`（覆盖），确保尺寸正确。更新 `assets/pet.json`。
+将新精灵图保存到目标角色目录下的 `spritesheet.png`，确保尺寸正确。同步更新同目录下的 `pet.json`。
 
 ### 7. 生成图标
 
@@ -242,7 +335,7 @@ Claude Code 通过以下 hook 事件驱动桌宠状态。模板位于 `hooks/set
 
 ```bash
 npm run setup   # 自动生成图标和桌面快捷方式
-npm test        # 验证 31 个测试全部通过
+npm test        # 验证测试全部通过
 npm start       # 启动桌宠，确认动画正常
 ```
 

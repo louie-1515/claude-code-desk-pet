@@ -3,8 +3,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { getDisplayCellSize } from "../pet-app/display-metrics.js";
+import { getDefaultPetDescriptor } from "../pet-app/pet-registry.js";
 
-const pet = JSON.parse(readFileSync(new URL("../assets/pet.json", import.meta.url), "utf8"));
+const pet = JSON.parse(readFileSync(getDefaultPetDescriptor().petConfigFile, "utf8"));
 
 test("runtime sprite sheet uses a 2x cell while preserving the compact display size", () => {
   assert.deepEqual(pet.cell, { width: 384, height: 416 });

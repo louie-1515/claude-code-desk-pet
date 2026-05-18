@@ -15,6 +15,9 @@ test("createPetWebPreferences disables sandbox and forwards preload arguments", 
   const preferences = createPetWebPreferences({ preload, ...args });
 
   assert.equal(preferences.preload, preload);
+  assert.equal(preferences.contextIsolation, true);
+  assert.equal(preferences.nodeIntegration, false);
+  assert.equal(preferences.devTools, false);
   assert.equal(preferences.sandbox, false);
   assert.deepEqual(preferences.additionalArguments, [
     `--state-file=${args.stateFile}`,

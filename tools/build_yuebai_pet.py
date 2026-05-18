@@ -21,6 +21,7 @@ COLUMNS = 8
 ROWS = 9
 ATLAS_W = CELL_W * COLUMNS
 ATLAS_H = CELL_H * ROWS
+DEFAULT_PET_ASSET_DIR = ROOT / "assets" / "pets" / "yuebai-archivist"
 
 ROW_SPECS = [
     ("idle", 0, 6),
@@ -413,10 +414,10 @@ def copy_assets() -> None:
             "review": {"row": 8, "frames": 6, "frameDurationMs": 150},
         },
     }
-    ASSETS.mkdir(parents=True, exist_ok=True)
-    (ASSETS / "pet.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    DEFAULT_PET_ASSET_DIR.mkdir(parents=True, exist_ok=True)
+    (DEFAULT_PET_ASSET_DIR / "pet.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     (FINAL / "pet.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    Image.open(FINAL / "spritesheet.png").save(ASSETS / "spritesheet.png")
+    Image.open(FINAL / "spritesheet.png").save(DEFAULT_PET_ASSET_DIR / "spritesheet.png")
 
 
 def build() -> None:

@@ -1,10 +1,11 @@
-import { dragDirectionFromDelta, resolveDisplayState } from "./view-model.js";
+import { resolveDisplayState, resolveDragDirection } from "./view-model.js";
 import { getDisplayCellSize, getPetWindowSize } from "./display-metrics.js";
 
 const sprite = document.getElementById("pet-sprite");
 const stage = document.getElementById("pet-stage");
 const phaseLabel = document.getElementById("phase-label");
 const phaseMessage = document.getElementById("phase-message");
+const bubble = document.querySelector(".bubble");
 
 const resizeHandle = document.createElement("span");
 resizeHandle.className = "pet-resize-handle";
@@ -21,23 +22,89 @@ let displayCell = null;
 let petScale = 1;
 let resizeState = null;
 let isHovering = false;
+let lastDragDirection = "right";
+let hideBubbleOnIdle = false;
+
+export function shouldShowBubble({ phase, isDragging, hideBubbleOnIdle }) {
+  if (isDragging) return true;
+  if (phase !== "idle") return true;
+  if (hideBubbleOnIdle) return false;
+  return true;
+}
+
+function getAnimation(animationName) {
+  const animations = petConfig?.animations;
+  if (!animations || typeof animations !== "object") {
+    return null;
+  }
+  const animation = animations[animationName];
+  if (!animation || typeof animation.row !== "number" || typeof animation.frames !== "number") {
+    return null;
+  }
+  return {
+    row: animation.row,
+    frames: Math.max(1, animation.frames),
+    frameDurationMs: Math.max(16, Number(animation.frameDurationMs ?? 120))
+  };
+}
+
+function pickFallbackAnimationName() {
+  const animations = petConfig?.animations;
+  if (!animations || typeof animations !== "object") {
+    return null;
+  }
+  const names = Object.keys(animations);
+  return names.length ? names[0] : null;
+}
+
+function setSpriteFallbackFrame() {
+  // Clear the animation timer and show a stable frame instead of crashing/blanking.
+  clearInterval(frameTimer);
+  frameTimer = null;
+  currentAnimation = null;
+  currentFrame = 0;
+  if (!displayCell) {
+    return;
+  }
+  sprite.style.width = `${displayCell.width}px`;
+  sprite.style.height = `${displayCell.height}px`;
+  sprite.style.backgroundPosition = `0px 0px`;
+}
 
 function setSpriteFrame(animationName, frameIndex) {
-  const animation = petConfig.animations[animationName];
+  const animation = getAnimation(animationName);
+  if (!animation) {
+    setSpriteFallbackFrame();
+    return false;
+  }
   sprite.style.width = `${displayCell.width}px`;
   sprite.style.height = `${displayCell.height}px`;
   sprite.style.backgroundPosition = `${-frameIndex * displayCell.width}px ${-animation.row * displayCell.height}px`;
+  return true;
 }
 
 function startAnimation(animationName) {
   if (!petConfig || currentAnimation === animationName) {
     return;
   }
+  const requested = animationName;
+  const animation = getAnimation(requested);
+  if (!animation) {
+    const fallback = pickFallbackAnimationName();
+    if (fallback && fallback !== requested) {
+      console.warn(`[desk-pet] Missing animation "${requested}", falling back to "${fallback}".`);
+      startAnimation(fallback);
+      return;
+    }
+    console.warn(`[desk-pet] Missing animation "${requested}" and no fallback is available. Rendering a static frame.`);
+    phaseMessage.textContent = "动画缺失，已降级为静态显示。";
+    setSpriteFallbackFrame();
+    return;
+  }
   currentAnimation = animationName;
   currentFrame = 0;
   clearInterval(frameTimer);
   setSpriteFrame(animationName, currentFrame);
-  const animation = petConfig.animations[animationName];
   frameTimer = setInterval(() => {
     currentFrame = (currentFrame + 1) % animation.frames;
     setSpriteFrame(animationName, currentFrame);
@@ -46,6 +113,15 @@ function startAnimation(animationName) {
 
 function renderView() {
   const phase = latestState?.phase ?? "idle";
+  const showBubble = shouldShowBubble({
+    phase,
+    isDragging: Boolean(dragState),
+    hideBubbleOnIdle
+  });
+  if (bubble) {
+    bubble.style.display = showBubble ? "" : "none";
+    bubble.setAttribute("aria-hidden", showBubble ? "false" : "true");
+  }
   const ui = resolveDisplayState({ phase, dragDirection: dragState?.direction ?? null });
   phaseLabel.textContent = ui.label;
   phaseMessage.textContent = dragState?.direction ? ui.message : latestState?.message || ui.message;
@@ -83,16 +159,18 @@ function handlePointerMove(event) {
   const frameDeltaX = event.screenX - dragState.lastScreenX;
   const frameDeltaY = event.screenY - dragState.lastScreenY;
 
-  // Dead zone: skip if cursor hasn't moved enough since last processed frame
-  if (Math.abs(frameDeltaX) < 2 && Math.abs(frameDeltaY) < 2) {
-    return;
-  }
-
   dragState.lastScreenX = event.screenX;
   dragState.lastScreenY = event.screenY;
 
-  // Direction from frame-to-frame delta so slow reversals are detected immediately
-  dragState.direction = dragDirectionFromDelta(frameDeltaX, 4);
+  // While dragging, keep the animation in the drag state and only update the facing direction
+  // when movement is clear enough to be intentional.
+  dragState.direction = resolveDragDirection({
+    deltaX: frameDeltaX,
+    currentDirection: dragState.direction,
+    threshold: 4,
+    fallbackDirection: lastDragDirection
+  });
+  lastDragDirection = dragState.direction;
 
   const totalDeltaX = event.screenX - dragState.startScreenX;
   const totalDeltaY = event.screenY - dragState.startScreenY;
@@ -126,9 +204,14 @@ async function boot() {
   sprite.style.backgroundImage = `url("file:///${payload.spriteFile.replace(/\\/g, "/")}")`;
   sprite.style.backgroundRepeat = "no-repeat";
   petScale = payload.windowState?.petScale ?? 1;
+  hideBubbleOnIdle = Boolean(payload.windowState?.hideBubbleOnIdle);
   applyPetScale(petScale);
   renderState(payload.state);
   window.petApi.watchState(renderState);
+  window.petApi.watchSettings(settings => {
+    hideBubbleOnIdle = Boolean(settings?.hideBubbleOnIdle);
+    renderView();
+  });
 }
 
 stage.addEventListener("pointerdown", event => {
@@ -141,7 +224,7 @@ stage.addEventListener("pointerdown", event => {
     startScreenY: event.screenY,
     lastScreenX: event.screenX,
     lastScreenY: event.screenY,
-    direction: null,
+    direction: lastDragDirection,
     didMove: false
   };
   stage.setPointerCapture(event.pointerId);
@@ -154,6 +237,12 @@ stage.addEventListener("pointerup", endDrag);
 stage.addEventListener("pointercancel", endDrag);
 stage.addEventListener("dblclick", () => {
   window.petApi.openProjectRoot();
+});
+
+stage.addEventListener("contextmenu", event => {
+  event.preventDefault();
+  event.stopPropagation();
+  window.petApi.showContextMenu(event.screenX, event.screenY);
 });
 
 resizeHandle.addEventListener("pointerdown", event => {

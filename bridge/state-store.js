@@ -16,6 +16,12 @@ export async function loadState(filePath) {
   }
 }
 
+function withCause(message, cause) {
+  const error = new Error(message);
+  error.cause = cause;
+  return error;
+}
+
 function mergeState(existing, incoming) {
   if (!existing) {
     return incoming;
@@ -45,16 +51,21 @@ function mergeState(existing, incoming) {
   };
 }
 
-export async function writeState(filePath, incoming) {
+export async function writeState(
+  filePath,
+  incoming,
+  fsOps = { mkdir, writeFile, rename, unlink }
+) {
   const existing = await loadState(filePath);
   const next = mergeState(existing, incoming);
-  await mkdir(path.dirname(filePath), { recursive: true });
+  await fsOps.mkdir(path.dirname(filePath), { recursive: true });
   const tempPath = `${filePath}.${randomUUID()}.tmp`;
-  await writeFile(tempPath, JSON.stringify(next, null, 2) + "\n", "utf8");
+  await fsOps.writeFile(tempPath, JSON.stringify(next, null, 2) + "\n", "utf8");
   try {
-    await rename(tempPath, filePath);
-  } catch {
-    await unlink(tempPath).catch(() => {});
+    await fsOps.rename(tempPath, filePath);
+  } catch (error) {
+    await fsOps.unlink(tempPath).catch(() => {});
+    throw withCause(`Failed to persist Claude pet state to ${filePath}`, error);
   }
   return next;
 }

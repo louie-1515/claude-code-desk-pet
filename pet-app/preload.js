@@ -31,16 +31,17 @@ function readJson(file) {
 
 contextBridge.exposeInMainWorld("petApi", {
   async getBootPayload() {
-    const [state, pet, windowState] = await Promise.all([
+    const [state, resources, windowState] = await Promise.all([
       readJson(stateFile),
-      readJson(petConfigFile),
+      ipcRenderer.invoke("pet-resources-read"),
       ipcRenderer.invoke("pet-window-state-read")
     ]);
+    const pet = await readJson(resources?.petConfigFile ?? petConfigFile);
     return {
       state,
       pet,
       windowState,
-      spriteFile,
+      spriteFile: resources?.spriteFile ?? spriteFile,
       projectRoot
     };
   },
@@ -51,10 +52,21 @@ contextBridge.exposeInMainWorld("petApi", {
     watchFile(stateFile, { interval: 400 }, handler);
     return () => unwatchFile(stateFile, handler);
   },
+  watchSettings(callback) {
+    const channel = (_event, settings) => {
+      callback(settings);
+    };
+    ipcRenderer.on("pet-settings-updated", channel);
+    ipcRenderer.send("pet-settings-subscribe");
+    return () => ipcRenderer.removeListener("pet-settings-updated", channel);
+  },
   async openProjectRoot() {
     const state = await readJson(stateFile);
     const cwd = state?.cwd ?? state?.projectDir ?? projectRoot;
     return shell.openPath(cwd);
+  },
+  showContextMenu(screenX, screenY) {
+    ipcRenderer.send("pet-context-menu", { screenX, screenY });
   },
   beginWindowDrag(screenX, screenY) {
     ipcRenderer.send("pet-window-drag-start", { screenX, screenY });
