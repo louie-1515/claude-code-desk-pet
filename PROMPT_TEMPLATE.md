@@ -113,23 +113,43 @@
 
 ## 负面约束
 
-下面这些内容尽量明确禁止，能大幅减少后处理麻烦：
+这一部分建议分成两层理解：
 
-- 不要写实风
-- 不要半写实动漫渲染
-- 不要柔光插画感
-- 不要 3D 渲染感
-- 不要水彩、纸纹、草图、厚涂
+### 第一层：结构性约束（固定，不建议放开）
+
+这些不是审美偏好，而是为了保证 sprite sheet 能稳定接入桌宠系统。下面这些内容应尽量明确禁止：
+
 - 不要复杂背景
 - 不要地台、场景、家具、地面阴影块
-- 不要发光特效、粒子雨、漂浮背景物
-- 不要大面积速度线、感叹号、星星、泡泡、符号装饰
 - 不要在留空列里补动作
 - 不要角色忽大忽小
 - 不要人物在某些帧里飘到半空或沉到底边
 - 不要更换服装、发型、道具主设定
+- 不要大面积速度线、感叹号、星星、泡泡、符号装饰
+- 不要发光特效、粒子雨、漂浮背景物
 
 如果某个状态需要道具，只允许**小型、贴近身体、易抠图的单一道具**，比如一张发光小文档。
+
+### 第二层：风格性约束（默认推荐，可按用户要求覆盖）
+
+下面这些属于默认推荐风格，不是绝对禁止项。  
+如果用户明确指定了其他视觉方向，可以适度放宽，但仍必须保持：
+
+- 像素可读性
+- 角色轮廓稳定
+- 背景易抠
+- 体型和站位一致
+- 固定行序与状态动作映射不变
+
+默认不建议：
+
+- 过度写实风
+- 半写实动漫渲染
+- 柔光插画感
+- 3D 渲染感
+- 水彩、纸纹、草图、厚涂
+
+换句话说，**风格可以自定义，但结构不能散**。
 
 ---
 
@@ -176,24 +196,31 @@ Minimal anti-aliasing.
 Retro 16-bit / 32-bit game sprite feel.
 Plain solid white or solid green background only.
 
-Negative constraints:
-no realistic rendering,
-no semi-realistic anime rendering,
-no painterly shading,
-no watercolor,
-no sketch texture,
-no paper texture,
-no 3D render look,
+Structural negative constraints that should remain strict:
 no background scene,
+no stage platform,
+no furniture,
+no large ground shadow block,
 no props outside the character silhouette area,
 no extra decorative symbols in empty cells,
 no large VFX,
 no floating particles,
 no oversized speed lines,
-no dramatic lighting,
 no size drift between frames,
 no row reordering,
-no incorrect state-action mapping.
+no incorrect state-action mapping,
+no unstable baseline,
+no inconsistent costume or hairstyle changes.
+
+Default style constraints, which may be relaxed only if the user explicitly requests a different look:
+avoid realistic rendering,
+avoid semi-realistic anime rendering,
+avoid painterly shading,
+avoid watercolor,
+avoid sketch texture,
+avoid paper texture,
+avoid 3D render look,
+avoid dramatic lighting.
 ```
 
 ---
@@ -202,7 +229,7 @@ no incorrect state-action mapping.
 
 如果你是让 Claude 或其他 AI 帮你二次整理提示词，最好再附一句中文要求：
 
-> 这不是普通插画，而是要接入固定状态映射的桌宠精灵图。请严格保持 9 行固定顺序、统一体型、统一站位、统一镜头距离，多余列留空。
+> 这不是普通插画，而是要接入固定状态映射的桌宠精灵图。请严格保持 9 行固定顺序、统一体型、统一站位、统一镜头距离，多余列留空。视觉风格可以按用户要求调整，但不能破坏这些结构约束。
 
 ---
 
