@@ -8,7 +8,6 @@ const BUBBLE_WIDTH = 194;
 const SHELL_H_PADDING = 14;
 const MIN_WINDOW_WIDTH = BUBBLE_WIDTH + SHELL_H_PADDING;
 const BUBBLE_RESERVED_HEIGHT = 102;
-const HORIZONTAL_MARGIN = 58;
 
 export function normalizePetScale(value) {
   if (!Number.isFinite(value)) {
@@ -28,9 +27,9 @@ export function getDisplayCellSize(cell, petScale = DEFAULT_PET_SCALE, baseScale
 }
 
 export function getPetWindowSize(cell, petScale = DEFAULT_PET_SCALE) {
-  const displayCell = getDisplayCellSize(cell, petScale);
+  const maxDisplayCell = getDisplayCellSize(cell, MAX_PET_SCALE);
   return {
-    width: Math.max(MIN_WINDOW_WIDTH, displayCell.width + HORIZONTAL_MARGIN),
-    height: displayCell.height + BUBBLE_RESERVED_HEIGHT
+    width: MIN_WINDOW_WIDTH,
+    height: maxDisplayCell.height + BUBBLE_RESERVED_HEIGHT
   };
 }

@@ -1,6 +1,6 @@
 import { createPetWebPreferences } from "./web-preferences.js";
 
-export const defaultWindowSize = { width: 208, height: 248 };
+export const defaultWindowSize = { width: 208, height: 299 };
 
 export function createPetWindowOptions({
   preload,

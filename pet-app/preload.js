@@ -83,6 +83,9 @@ contextBridge.exposeInMainWorld("petApi", {
   endPetResize() {
     return ipcRenderer.invoke("pet-window-resize-end");
   },
+  setMousePassthrough(ignore) {
+    ipcRenderer.send("pet-window-set-mouse-passthrough", { ignore });
+  },
   focusTerminal() {
     ipcRenderer.send("pet-focus-terminal");
   }

@@ -1,5 +1,5 @@
-const SNAP_MARGIN = 24;
-const SNAP_THRESHOLD = 24;
+const SNAP_MARGIN = 2;
+const SNAP_THRESHOLD = 16;
 
 export function defaultWindowPosition({ workArea, windowSize, margin = SNAP_MARGIN }) {
   return {

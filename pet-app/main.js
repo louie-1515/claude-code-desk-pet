@@ -28,6 +28,7 @@ let mainWindow = null;
 let tray = null;
 let isQuitting = false;
 let dragSession = null;
+let isMousePassthrough = false;
 
 function getCurrentWindowState() {
   return { ...defaultWindowState(), ...(readWindowState() ?? {}) };
@@ -250,6 +251,7 @@ function createWindow() {
       windowSize
     })
   );
+  isMousePassthrough = false;
 
   const initialPosition = computeInitialWindowPosition();
   mainWindow.setPosition(initialPosition.x, initialPosition.y);
@@ -258,6 +260,18 @@ function createWindow() {
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
+}
+
+function setWindowMousePassthrough(win, ignore) {
+  if (!win || win.isDestroyed() || isMousePassthrough === ignore) {
+    return;
+  }
+  isMousePassthrough = ignore;
+  if (ignore) {
+    win.setIgnoreMouseEvents(true, { forward: true });
+    return;
+  }
+  win.setIgnoreMouseEvents(false);
 }
 
 function toggleWindow() {
@@ -382,22 +396,11 @@ function registerDragHandlers() {
     }
     const saved = currentWindowStateFor(win);
     const nextScale = normalizePetScale(saved.petScale + (payload?.deltaX ?? 0) / 240);
+    const [x, y] = win.getPosition();
     const windowSize = getWindowSizeForScale(nextScale);
-    win.setSize(windowSize.width, windowSize.height);
-    const [resizedX, resizedY] = win.getPosition();
-    const nextPoint = { x: resizedX, y: resizedY };
-    const workArea = getDisplayWorkAreaForWindowPosition(nextPoint, windowSize);
-    const clampedPoint = clampResizedWindowPosition({
-      point: nextPoint,
-      workArea,
-      windowSize
-    });
-    if (clampedPoint.x !== resizedX || clampedPoint.y !== resizedY) {
-      win.setPosition(clampedPoint.x, clampedPoint.y);
-    }
     const next = {
-      x: clampedPoint.x,
-      y: clampedPoint.y,
+      x,
+      y,
       petScale: nextScale
     };
     writeWindowState(next);
@@ -412,6 +415,14 @@ function registerDragHandlers() {
     const next = currentWindowStateFor(win);
     writeWindowState(next);
     return next;
+  });
+
+  ipcMain.on("pet-window-set-mouse-passthrough", (event, payload) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win) {
+      return;
+    }
+    setWindowMousePassthrough(win, payload?.ignore === true);
   });
 
   ipcMain.on("pet-context-menu", (event, payload) => {

@@ -37,8 +37,8 @@ test("getDisplayCellSize only changes the pet sprite size", () => {
   assert.deepEqual(getDisplayCellSize({ width: 384, height: 416 }, 1.25), { width: 168, height: 182 });
 });
 
-test("getPetWindowSize grows and shrinks to fit the scaled pet", () => {
-  assert.deepEqual(getPetWindowSize({ width: 384, height: 416 }, 1), { width: 208, height: 248 });
-  assert.deepEqual(getPetWindowSize({ width: 384, height: 416 }, 1.25), { width: 226, height: 284 });
-  assert.deepEqual(getPetWindowSize({ width: 384, height: 416 }, 0.75), { width: 208, height: 211 });
+test("getPetWindowSize stays fixed across pet scales so the shell does not jump around", () => {
+  assert.deepEqual(getPetWindowSize({ width: 384, height: 416 }, 1), { width: 208, height: 299 });
+  assert.deepEqual(getPetWindowSize({ width: 384, height: 416 }, 1.25), { width: 208, height: 299 });
+  assert.deepEqual(getPetWindowSize({ width: 384, height: 416 }, 0.75), { width: 208, height: 299 });
 });

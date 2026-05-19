@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { createPetWindowOptions, defaultWindowSize } from "../pet-app/window-options.js";
 
 test("createPetWindowOptions locks the desk pet window to a stable size", () => {
-  assert.deepEqual(defaultWindowSize, { width: 208, height: 248 });
+  assert.deepEqual(defaultWindowSize, { width: 208, height: 299 });
 
   const options = createPetWindowOptions({
     preload: "E:/project/pet-app/preload.js",
@@ -33,13 +33,13 @@ test("createPetWindowOptions accepts a scaled window size while preserving fixed
     petConfigFile: "E:/project/assets/pet.json",
     spriteFile: "E:/project/assets/spritesheet.png",
     projectRoot: "E:/project",
-    windowSize: { width: 208, height: 285 }
+    windowSize: { width: 208, height: 299 }
   });
 
   assert.equal(options.width, 208);
-  assert.equal(options.height, 285);
+  assert.equal(options.height, 299);
   assert.equal(options.minWidth, 208);
   assert.equal(options.maxWidth, 208);
-  assert.equal(options.minHeight, 285);
-  assert.equal(options.maxHeight, 285);
+  assert.equal(options.minHeight, 299);
+  assert.equal(options.maxHeight, 299);
 });

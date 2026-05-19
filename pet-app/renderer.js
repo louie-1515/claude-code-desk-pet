@@ -1,11 +1,13 @@
 import { resolveDisplayState, resolveDragDirection, shouldKeepHovering } from "./view-model.js";
 import { getDisplayCellSize, getPetWindowSize } from "./display-metrics.js";
+import { shouldIgnoreMouseEventsForTarget } from "./pointer-behavior.js";
 
 const sprite = document.getElementById("pet-sprite");
 const stage = document.getElementById("pet-stage");
 const phaseLabel = document.getElementById("phase-label");
 const phaseMessage = document.getElementById("phase-message");
 const bubble = document.querySelector(".bubble");
+const petShell = document.querySelector(".pet-shell");
 
 const resizeHandle = document.createElement("span");
 resizeHandle.className = "pet-resize-handle";
@@ -25,12 +27,55 @@ let isHovering = false;
 let lastDragDirection = "right";
 let hideBubbleOnIdle = false;
 let hasWindowFocus = true;
+let isMousePassthrough = false;
+let lastPointerClient = null;
 
 export function shouldShowBubble({ phase, isDragging, hideBubbleOnIdle }) {
   if (hideBubbleOnIdle && phase === "idle") return false;
   if (isDragging) return true;
   if (phase !== "idle") return true;
   return true;
+}
+
+function setMousePassthrough(nextValue) {
+  if (isMousePassthrough === nextValue) {
+    return;
+  }
+  isMousePassthrough = nextValue;
+  window.petApi.setMousePassthrough(nextValue);
+}
+
+function syncMousePassthroughFromTarget(target) {
+  setMousePassthrough(
+    shouldIgnoreMouseEventsForTarget({
+      target,
+      isDragging: Boolean(dragState),
+      isResizing: Boolean(resizeState)
+    })
+  );
+}
+
+function syncMousePassthroughFromLastPointer() {
+  if (!lastPointerClient) {
+    return;
+  }
+  syncMousePassthroughFromTarget(
+    document.elementFromPoint(lastPointerClient.x, lastPointerClient.y)
+  );
+}
+
+function applyShellSize() {
+  const windowSize = getPetWindowSize(petConfig.cell, petScale);
+  document.body.style.width = `${windowSize.width}px`;
+  document.body.style.height = `${windowSize.height}px`;
+  petShell.style.width = `${windowSize.width}px`;
+  petShell.style.height = `${windowSize.height}px`;
+  stage.style.width = `${displayCell.width + 16}px`;
+  stage.style.height = `${displayCell.height + 6}px`;
+  sprite.style.backgroundSize = `${petConfig.atlas.columns * displayCell.width}px ${petConfig.atlas.rows * displayCell.height}px`;
+  if (currentAnimation) {
+    setSpriteFrame(currentAnimation, currentFrame);
+  }
 }
 
 function getAnimation(animationName) {
@@ -135,6 +180,7 @@ function renderView() {
   if (!isHovering) {
     startAnimation(ui.animation);
   }
+  syncMousePassthroughFromLastPointer();
 }
 
 function renderState(state) {
@@ -189,22 +235,13 @@ function handlePointerMove(event) {
 function applyPetScale(nextScale) {
   petScale = nextScale;
   displayCell = getDisplayCellSize(petConfig.cell, petScale);
-  const windowSize = getPetWindowSize(petConfig.cell, petScale);
-  document.body.style.width = `${windowSize.width}px`;
-  document.body.style.height = `${windowSize.height}px`;
-  document.querySelector(".pet-shell").style.width = `${windowSize.width}px`;
-  document.querySelector(".pet-shell").style.height = `${windowSize.height}px`;
-  stage.style.width = `${displayCell.width + 16}px`;
-  stage.style.height = `${displayCell.height + 6}px`;
-  sprite.style.backgroundSize = `${petConfig.atlas.columns * displayCell.width}px ${petConfig.atlas.rows * displayCell.height}px`;
-  if (currentAnimation) {
-    setSpriteFrame(currentAnimation, currentFrame);
-  }
+  applyShellSize();
 }
 
 async function boot() {
   const payload = await window.petApi.getBootPayload();
   petConfig = payload.pet;
+  latestState = payload.state;
   sprite.style.backgroundImage = `url("file:///${payload.spriteFile.replace(/\\/g, "/")}")`;
   sprite.style.backgroundRepeat = "no-repeat";
   petScale = payload.windowState?.petScale ?? 1;
@@ -222,6 +259,7 @@ stage.addEventListener("pointerdown", event => {
   if (event.button !== 0) {
     return;
   }
+  setMousePassthrough(false);
   isHovering = false;
   dragState = {
     startScreenX: event.screenX,
@@ -258,6 +296,7 @@ resizeHandle.addEventListener("pointerdown", event => {
   }
   event.stopPropagation();
   event.preventDefault();
+  setMousePassthrough(false);
   resizeState = {
     pointerId: event.pointerId,
     startScreenX: event.screenX
@@ -287,6 +326,7 @@ async function endResize(event) {
   event.preventDefault();
   resizeState = null;
   await window.petApi.endPetResize();
+  syncMousePassthroughFromLastPointer();
 }
 
 resizeHandle.addEventListener("pointerup", endResize);
@@ -312,6 +352,21 @@ window.addEventListener("blur", () => {
 window.addEventListener("focus", () => {
   hasWindowFocus = true;
   renderView();
+});
+
+window.addEventListener("mousemove", event => {
+  lastPointerClient = {
+    x: event.clientX,
+    y: event.clientY
+  };
+  syncMousePassthroughFromTarget(document.elementFromPoint(event.clientX, event.clientY));
+});
+
+window.addEventListener("mouseleave", () => {
+  if (dragState || resizeState) {
+    return;
+  }
+  setMousePassthrough(true);
 });
 
 boot();

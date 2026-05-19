@@ -13,10 +13,10 @@ import {
 test("defaultWindowPosition places the pet near the bottom-right corner", () => {
   const position = defaultWindowPosition({
     workArea: { x: 0, y: 0, width: 1440, height: 900 },
-    windowSize: { width: 260, height: 320 }
+    windowSize: { width: 208, height: 299 }
   });
 
-  assert.deepEqual(position, { x: 1156, y: 556 });
+  assert.deepEqual(position, { x: 1230, y: 599 });
 });
 
 test("clampPositionToWorkArea keeps the pet inside the visible work area", () => {
@@ -31,12 +31,12 @@ test("clampPositionToWorkArea keeps the pet inside the visible work area", () =>
 
 test("snapWindowPosition gently snaps when close to an edge", () => {
   const position = snapWindowPosition({
-    point: { x: 8, y: 554 },
+    point: { x: 1, y: 598 },
     workArea: { x: 0, y: 0, width: 1440, height: 900 },
-    windowSize: { width: 260, height: 320 }
+    windowSize: { width: 208, height: 299 }
   });
 
-  assert.deepEqual(position, { x: 24, y: 556 });
+  assert.deepEqual(position, { x: 2, y: 599 });
 });
 
 test("snapWindowPosition leaves the pet alone when far from edges", () => {

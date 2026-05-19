@@ -14,8 +14,8 @@ html,
 body {
   width: 208px;
   min-width: 208px;
-  height: 248px;
-  min-height: 248px;
+  height: 299px;
+  min-height: 299px;
   margin: 0;
   background: transparent;
   font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif;
@@ -27,12 +27,12 @@ body {
 
 .pet-shell {
   width: 208px;
-  height: 248px;
+  height: 299px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  padding: 8px 7px 10px;
+  padding: 6px 3px 2px;
   gap: 2px;
 }
 
@@ -40,6 +40,7 @@ body {
   width: 194px;
   min-width: 194px;
   max-width: 194px;
+  align-self: center;
   padding: 8px 10px;
   border-radius: 14px;
   background: var(--bubble-bg);
@@ -72,6 +73,7 @@ body {
   background: transparent;
   padding: 0;
   margin-bottom: 0;
+  margin-left: 10px;
   cursor: grab;
   display: grid;
   place-items: end center;
@@ -85,14 +87,14 @@ body {
 
 .pet-sprite {
   image-rendering: pixelated;
-  transform: translateY(-6px);
+  transform: translateY(0);
   filter: drop-shadow(0 10px 18px rgba(22, 32, 43, 0.24));
 }
 
 .pet-resize-handle {
   position: absolute;
-  right: 7px;
-  bottom: 5px;
+  right: 1px;
+  bottom: 1px;
   width: 18px;
   height: 18px;
   border-radius: 6px;
